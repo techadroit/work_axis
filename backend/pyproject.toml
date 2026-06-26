@@ -1,0 +1,64 @@
+[project]
+name = "personalai"
+version = "0.1.0"
+description = "PersonalAI backend service"
+readme = "Readme.md"
+requires-python = ">=3.12,<3.13"
+authors = [{ name = "PersonalAI Team" }]
+dependencies = [
+	"langchain~=1.0.0",
+	"langchain-core~=1.0.0",
+	"python-dotenv~=1.1.1",
+	"loguru~=0.7.3",
+	"langchain-aws~=1.0.0",
+	"langchain-openai~=1.0.0",
+	"langchain-anthropic~=1.0.0",
+	"langchain-ollama~=1.0.0",
+	"langchain_google_genai~=3.0.0",
+	"fastapi[standard]~=0.119.0",
+	"websockets",
+	"uvicorn",
+	"python-multipart",
+	"langgraph~=1.0.0",
+	"lxml>=4.9.1,<5.0.0",
+	"requests==2.32.5",
+	"langgraph-checkpoint-sqlite==3.0.0",
+	"aiosqlite==0.20.0",
+	"langchain-community==0.4.1",
+	"sentence-transformers",
+	"chromadb",
+	"httpx",
+	"fastembed",
+	"langchain-mcp-adapters",
+	"docling",
+	"duckdb",
+	"pydantic[email]",
+	"pyinstaller~=6.0.0",
+	"huggingface_hub",
+	"cryptography>=41.0.0",
+	"certifi>=2024.0.0",
+	"core",
+	"web-search",
+]
+
+[dependency-groups]
+dev = [
+	"pytest",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = [
+	"modules/core",
+    "modules/web_search",
+]
+
+[tool.uv.sources]
+core = { workspace = true }
+web-search = { workspace = true }
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"

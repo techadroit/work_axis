@@ -1,0 +1,72 @@
+# Build Artifacts
+build/
+dist/
+*.spec.backup
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+
+# SSL Certificates (keep template only)
+data/ssl_certs/*.pem
+!data/ssl_certs/.gitkeep
+
+# Environment
+.env
+venv/
+env/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+logs/
+*.log
+
+# Database
+data/database/*.db
+data/database/*.db-journal
+
+# Vector Database
+data/vector_database/chromadb/
+
+# Cache
+.pytest_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Distribution
+*.egg-info/
+.eggs/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# PyInstaller
+*.manifest
+*.spec.backup
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Testing
+.coverage
+htmlcov/
+.tox/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Temporary files
+*.tmp
+*.temp
+~*
+

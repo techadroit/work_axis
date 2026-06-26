@@ -1,0 +1,6 @@
+OPENAI_NAME = "OpenAI"
+GOOGLE_NAME = "Google"
+AZURE_NAME = "Azure"
+AWS_NAME = "AWS"
+OLLAMA_NAME = "Ollama"
+ANTHROPIC_NAME = "Anthropic"

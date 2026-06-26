@@ -1,0 +1,80 @@
+services:
+
+  # ── PersonalAI Backend ──────────────────────────────────────────────────────
+  personalai:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: personalai
+    restart: unless-stopped
+
+    # Port mapping: host:container
+    ports:
+      - "8001:8001"
+
+    # Environment — override any value via a .env file in the project root
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "8001"
+      PYTHONUNBUFFERED: "1"
+      OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-http://host.docker.internal:11434}"
+      ENABLE_SSL: "${ENABLE_SSL:-false}"
+      VERIFY_SSL: "${VERIFY_SSL:-false}"
+      # API keys (set in .env file — never hard-code secrets here)
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
+      GOOGLE_API_KEY: "${GOOGLE_API_KEY:-}"
+      TOGETHER_API_KEY: "${TOGETHER_API_KEY:-}"
+
+    # Named volumes for persistence
+    volumes:
+      - personalai_db:/app/data/database
+      - personalai_files:/app/data/files
+      - personalai_vectordb:/app/data/vector_database
+      - personalai_embeddings:/app/data/embedding_models
+      - personalai_checkpoints:/app/data/checkpoints
+      - personalai_ssl:/app/data/ssl_certs
+
+    # Ensure host.docker.internal resolves on Linux and works on Docker Desktop too.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    # Health check mirroring the Dockerfile HEALTHCHECK
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+
+    # Structured JSON logging via Docker's json-file driver
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+        labels: "service"
+        tag: "personalai|{{.ImageName}}|{{.Name}}|{{.ID}}"
+
+    labels:
+      service: "personalai"
+
+  # ── Future services can be added below ─────────────────────────────────────
+  # Example: a frontend, a separate worker, a database container, etc.
+  #
+  # frontend:
+  #   image: node:22-alpine
+  #   ...
+  #
+  # redis:
+  #   image: redis:7-alpine
+  #   ...
+
+# ── Named volumes ─────────────────────────────────────────────────────────────
+volumes:
+  personalai_db:
+  personalai_files:
+  personalai_vectordb:
+  personalai_embeddings:
+  personalai_checkpoints:
+  personalai_ssl:
