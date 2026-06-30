@@ -4,13 +4,13 @@ import asyncio
 from langchain_core.messages import HumanMessage
 from langchain_core.runnables import RunnableConfig
 
-from backend.app.llm.agents.agentic_mode.agent_node import agent_mode, AGENT_ROUTER_PROMPT
-from backend.app.llm.agents.persistence.database_check_pointer import provide_checkpointer
-from backend.app.llm.llm_handler.graph_llm_handler import get_graph_llm_handler
-from backend.app.llm.services.graph_llm_service import get_graph_llm_service
-from backend.app.utils.logger_util import log_response, log_debug
-from backend.app.utils.message_util import extract_ai_message
-from backend.app.utils.prompt_util import format_prompt
+from src.app.llm.agents.agentic_mode.agent_node import agent_mode, AGENT_ROUTER_PROMPT
+from src.app.llm.agents.persistence.database_check_pointer import provide_checkpointer
+from src.app.llm.llm_handler.graph_llm_handler import get_graph_llm_handler
+from src.app.llm.services.graph_llm_service import get_graph_llm_service
+from src.app.utils.logger_util import log_response, log_debug
+from src.app.utils.message_util import extract_ai_message
+from src.app.utils.prompt_util import format_prompt
 
 
 async def run_graph(message: str):

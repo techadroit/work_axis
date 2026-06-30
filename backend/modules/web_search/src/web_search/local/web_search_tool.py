@@ -5,8 +5,8 @@ from fastapi import HTTPException
 from langchain_community.tools import DuckDuckGoSearchResults
 from langchain_community.utilities import DuckDuckGoSearchAPIWrapper
 
-# from backend.app.utils.env_util import load_environment
-# from backend.app.utils.logger_util import log_debug
+# from src.app.utils.env_util import load_environment
+# from src.app.utils.logger_util import log_debug
 
 try:
     from ddgs.exceptions import DDGSException

@@ -3,7 +3,7 @@ import asyncio
 import httpx
 from bs4 import BeautifulSoup
 
-# from backend.app.utils.logger_util import log_debug
+# from src.app.utils.logger_util import log_debug
 
 
 # @tool("extract content from a webpage", return_direct=True)

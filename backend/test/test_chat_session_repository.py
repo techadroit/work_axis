@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Test script for refactored ChatSessionRepository"""
 
-from backend.app.server.database.repository.chat_session_repository import ChatSessionRepository
-from backend.app.server.database.models.chat_session_models import ChatSessionCreate, ChatSessionUpdate, MessageCreate
+from src.app.server.database.repository.chat_session_repository import ChatSessionRepository
+from src.app.server.database.models.chat_session_models import ChatSessionCreate, ChatSessionUpdate, MessageCreate
 
 
 def test_chat_session_repository():

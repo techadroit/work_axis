@@ -104,7 +104,7 @@ export const UiSectionTitle = ({
 );
 
 interface UiDividerProps extends DividerProps {
-  insetX?: DividerProps['sx'] extends SxProps<Theme> ? number | string | { [key: string]: number | string } : never;
+  insetX?: number | string | Record<string, number | string>;
 }
 
 export const UiDivider = ({ insetX, sx, ...props }: UiDividerProps) => (

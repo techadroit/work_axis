@@ -10,7 +10,6 @@ import {
   ForumOutlined,
   SmartToyOutlined,
   Close as CloseIcon,
-  TrendingUp as TrendingUpIcon,
   Menu as MenuIcon,
 } from '@mui/icons-material';
 import { alpha, useTheme } from '@mui/material/styles';
