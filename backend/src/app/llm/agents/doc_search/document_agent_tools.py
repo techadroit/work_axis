@@ -1,11 +1,11 @@
 from langchain_core.tools import tool
 from pydantic import BaseModel, Field
 
-from src.app.rag.models.vector_model import VectorModel
 from src.app.utils.embedding_util import create_default_embedding_model
 from src.app.utils.logger_util import log_debug, log_error, log_info
-from src.app.vector_db.base.vector_db_config import VectorDbConfig
-from src.app.vector_db.vectordb_factory import VectorDBFactory
+from vector_db.base.vector_db_config import VectorDbConfig
+from vector_db.models.vector_model import VectorModel
+from vector_db.vectordb_factory import VectorDBFactory
 
 
 class DocumentSearchInput(BaseModel):

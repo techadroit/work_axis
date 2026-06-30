@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
-from src.app.vector_db.base.vector_db_config import VectorDbConfig
+from vector_db.base.vector_db_config import VectorDbConfig
 
 
 class VectorDbClient(ABC):

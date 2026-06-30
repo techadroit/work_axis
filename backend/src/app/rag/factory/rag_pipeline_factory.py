@@ -5,8 +5,8 @@ from src.app.rag.pipeline.log_pipeline import LogPipeline
 from src.app.rag.pipeline.pipeline_handler import PipelineHandler
 from src.app.rag.pipeline.vector_storage_pipeline import VectorStoragePipeline
 from src.app.utils.embedding_util import create_sentence_transformer_embedding_model
-from src.app.vector_db.base.vector_db_config import VectorDbConfig
-from src.app.vector_db.vectordb_factory import VectorDBFactory
+from vector_db.base.vector_db_config import VectorDbConfig
+from vector_db.vectordb_factory import VectorDBFactory
 
 
 class RagPipelineFactory:

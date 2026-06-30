@@ -227,6 +227,7 @@ hidden_imports = [
     'vector_db',
     'vector_db.base',
     'vector_db.integrations',
+    'vector_db.models',
     'utils',
     'base',
     'prompts',

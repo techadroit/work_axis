@@ -1,5 +1,5 @@
-from src.app.vector_db.base.vector_db_client import VectorDbClient
-from src.app.vector_db.integrations.chroma_vector_db_client import provide_chroma_client
+from vector_db.base.vector_db_client import VectorDbClient
+from vector_db.integrations.chroma_vector_db_client import provide_chroma_client
 
 
 class VectorDBFactory(object):
