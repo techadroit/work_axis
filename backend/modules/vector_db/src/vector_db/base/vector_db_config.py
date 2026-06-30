@@ -1,4 +1,4 @@
-from src.app.vector_db.base.VectorDistance import VectorDistance
+from vector_db.base.VectorDistance import VectorDistance
 
 
 class VectorDbConfig:

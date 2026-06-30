@@ -1,15 +1,15 @@
 import os
 import uuid
+from typing import Any
 
 import chromadb
 from chromadb import Settings
 
-from src.app.llm.configuration.embedding_configuration import EmbeddingConfiguration
-from src.app.rag.models.vector_model import VectorModel, Payload
 from core.utils.file_util import get_vector_db_path
-from src.app.utils.logger_util import log_debug
-from src.app.vector_db.base.vector_db_client import VectorDbClient
-from src.app.vector_db.base.vector_db_config import VectorDbConfig
+from core.utils.logger_util import log_debug
+from vector_db.base.vector_db_client import VectorDbClient
+from vector_db.base.vector_db_config import VectorDbConfig
+from vector_db.models.vector_model import VectorModel, Payload
 
 
 class ChromaVectorDbClient(VectorDbClient):
@@ -22,7 +22,7 @@ class ChromaVectorDbClient(VectorDbClient):
     def __init__(self,
                  persist_directory: str = None,
                  vector_db_config: VectorDbConfig = None,
-                 embedding_configuration: EmbeddingConfiguration = None):
+                 embedding_configuration: Any = None):
         """
         Initialize ChromaDB client.
 
@@ -201,7 +201,7 @@ class ChromaVectorDbClient(VectorDbClient):
 # Singleton instance
 _client = ChromaVectorDbClient(
     vector_db_config=VectorDbConfig(),
-    embedding_configuration=EmbeddingConfiguration()
+    embedding_configuration=None
 )
 
 

@@ -39,6 +39,7 @@ dependencies = [
 	"certifi>=2024.0.0",
 	"core",
 	"web-search",
+	"vector-db",
 ]
 
 [dependency-groups]
@@ -53,11 +54,13 @@ package = false
 members = [
 	"modules/core",
     "modules/web_search",
+    "modules/vector_db",
 ]
 
 [tool.uv.sources]
 core = { workspace = true }
 web-search = { workspace = true }
+vector-db = { workspace = true }
 
 [build-system]
 requires = ["setuptools>=69"]
