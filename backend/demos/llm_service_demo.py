@@ -6,11 +6,11 @@ from langchain_core.tools import tool
 
 from demos.stream_callback_handler import StreamCallbackHandler
 from llm.LLMService import LLMService
-from backend.app.llm.llm_handler.llm_handler import LlmHandler
-from backend.app.llm.ToolHandler import ToolHandler
-from backend.app.llm.agents.web_search.web_search_agents import crete_web_search_agent
-from backend.app.server.base.app_graph import AppState
-from backend.app.utils.model_util import create_model_config, get_default_model_config
+from src.app.llm.llm_handler.llm_handler import LlmHandler
+from src.app.llm.ToolHandler import ToolHandler
+from src.app.llm.agents.web_search.web_search_agents import crete_web_search_agent
+from src.app.server.base.app_graph import AppState
+from src.app.utils.model_util import create_model_config, get_default_model_config
 from langgraph.graph import START
 
 system_prompt = """
@@ -78,7 +78,7 @@ async def response_node(app_state: AppState, config):
 
 
 async def run_graph_demo():
-    from backend.app.server.base.app_graph import AppGraph
+    from src.app.server.base.app_graph import AppGraph
     from langgraph.graph import StateGraph
 
     graph = StateGraph(AppState)

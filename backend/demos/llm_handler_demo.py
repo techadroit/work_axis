@@ -3,13 +3,13 @@ import asyncio
 from langchain_core.messages import HumanMessage
 from langgraph.constants import START
 
-from backend.app.llm.llm_handler.llm_handler import LLMHandler
-from backend.app.llm.llm_handler.chat_llm_handler import ChatLLMHandler
-from backend.app.llm.llm_handler.graph_llm_handler import GraphLLMHandler
-from backend.app.llm.services.graph_llm_service import GraphLLMService
-from backend.app.server.base.app_graph import AppState
-from backend.app.utils.logger_util import log_debug, log_response
-from backend.app.utils.model_util import get_default_model_config
+from src.app.llm.llm_handler.llm_handler import LLMHandler
+from src.app.llm.llm_handler.chat_llm_handler import ChatLLMHandler
+from src.app.llm.llm_handler.graph_llm_handler import GraphLLMHandler
+from src.app.llm.services.graph_llm_service import GraphLLMService
+from src.app.server.base.app_graph import AppState
+from src.app.utils.logger_util import log_debug, log_response
+from src.app.utils.model_util import get_default_model_config
 
 input_text = "Write a poem about AI"
 
@@ -50,7 +50,7 @@ def response_node(app_state: AppState):
 
 
 def create_graph():
-    from backend.app.server.base.app_graph import AppGraph
+    from src.app.server.base.app_graph import AppGraph
     from langgraph.graph import StateGraph
 
     graph = StateGraph(AppState)
@@ -77,7 +77,7 @@ async def async_response_node(app_state: AppState, config):
 
 
 def create_async_graph():
-    from backend.app.server.base.app_graph import AppGraph
+    from src.app.server.base.app_graph import AppGraph
     from langgraph.graph import StateGraph
 
     graph = StateGraph(AppState)

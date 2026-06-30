@@ -3,7 +3,7 @@ import time
 from langchain_community.llms import LlamaCpp
 from langchain_core.callbacks import CallbackManager, StreamingStdOutCallbackHandler
 
-from backend.app.utils.logger_util import log_info, log_debug
+from src.app.utils.logger_util import log_info, log_debug
 
 # Callbacks support token-wise streaming
 callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])

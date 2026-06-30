@@ -3,8 +3,8 @@ import datetime
 
 import pytest
 
-from backend.app.server.cache.message_cache import get_message_cache
-from backend.app.server.messages.ChatMessages import ChatMessages, AgentMode, ChatMessageBody
+from src.app.server.cache.message_cache import get_message_cache
+from src.app.server.messages.ChatMessages import ChatMessages, AgentMode, ChatMessageBody
 from core.utils.time_util import get_utc_time
 
 

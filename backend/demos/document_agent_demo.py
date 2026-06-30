@@ -2,12 +2,12 @@ import asyncio
 
 from langchain_core.messages import HumanMessage
 
-from backend.app.llm.agents.doc_search.document_agent_graph import create_document_agent_graph
-from backend.app.llm.llm_handler.graph_llm_handler import get_graph_llm_handler
-from backend.app.llm.services.graph_llm_service import get_graph_llm_service
-from backend.app.rag.factory.rag_pipeline_factory import RagPipelineFactory
-from backend.app.utils.logger_util import log_response
-from backend.app.utils.model_util import get_default_model_config
+from src.app.llm.agents.doc_search.document_agent_graph import create_document_agent_graph
+from src.app.llm.llm_handler.graph_llm_handler import get_graph_llm_handler
+from src.app.llm.services.graph_llm_service import get_graph_llm_service
+from src.app.rag.factory.rag_pipeline_factory import RagPipelineFactory
+from src.app.utils.logger_util import log_response
+from src.app.utils.model_util import get_default_model_config
 
 
 async def run_document_agent_demo():

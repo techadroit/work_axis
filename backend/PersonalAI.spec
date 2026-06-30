@@ -324,7 +324,7 @@ _primp_binaries = [(so, 'primp') for so in _primp_so]
 # Analysis
 # =============================================================================
 a = Analysis(
-    [os.path.join(ROOT, 'run_server.py')],
+    [os.path.join(ROOT, 'src', 'run_server.py')],
     pathex=[ROOT],
     binaries=_primp_binaries,
     datas=datas,

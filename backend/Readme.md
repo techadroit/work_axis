@@ -32,14 +32,14 @@ uv sync
 
 **Run server (HTTP):**
 ```bash
-uv run python backend/run_server.py
+uv run python backend/src/run_server.py
 # Server available at http://127.0.0.1:8001
 ```
 
 **Run server (HTTPS with SSL):**
 ```bash
 export ENABLE_SSL=true
-uv run python backend/run_server.py
+uv run python backend/src/run_server.py
 # Server available at https://127.0.0.1:8001
 ```
 
@@ -57,7 +57,7 @@ PersonalAI supports secure HTTPS communication with automatic SSL certificate ge
 **Enable HTTPS:**
 ```bash
 export ENABLE_SSL=true
-uv run python backend/run_server.py
+uv run python backend/src/run_server.py
 ```
 
 Self-signed certificates are automatically generated on first run. For production, replace with CA-signed certificates in `data/ssl_certs/`.

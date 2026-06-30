@@ -3,8 +3,8 @@ Test script to verify the chat session service layer implementation.
 This demonstrates the layered architecture: Routes -> Service -> Repository
 """
 
-from backend.app.server.service.chat_session_service import ChatSessionService
-from backend.app.server.schemas.chat_session_schemas import ChatSessionCreateRequest, ChatSessionUpdateRequest
+from src.app.server.service.chat_session_service import ChatSessionService
+from src.app.server.schemas.chat_session_schemas import ChatSessionCreateRequest, ChatSessionUpdateRequest
 
 def test_chat_session_service():
     """Test the chat session service functionality"""

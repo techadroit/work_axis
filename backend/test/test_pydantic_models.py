@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Test Pydantic models integration with ChatRepository"""
 
-from backend.app.server.database.repository.chat_session_repository import ChatSessionRepository
-from backend.app.server.database.models.chat_models import ChatCreate, MessageCreate, ChatUpdate
+from src.app.server.database.repository.chat_session_repository import ChatSessionRepository
+from src.app.server.database.models.chat_models import ChatCreate, MessageCreate, ChatUpdate
 
 def test_pydantic_integration():
     print('Testing Pydantic Models Integration...\n')
