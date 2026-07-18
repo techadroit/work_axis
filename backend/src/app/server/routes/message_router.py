@@ -1,4 +1,4 @@
-from src.app.llm.agents.app_supervisor_graph import app_supervisor_graph
+from agents.app_supervisor_graph import app_supervisor_graph
 from src.app.server.base.base_stream_handler import BaseStreamHandler
 from src.app.server.messages.ChatMessages import ChatMessages, convert_chat_messages_to_request
 from src.app.server.service import ChatMessageService

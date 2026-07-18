@@ -1,9 +1,9 @@
-from src.app.llm.llm_handler.chat_llm_handler import ChatLLMHandler
+from llm_module.llm_handler.chat_llm_handler import ChatLLMHandler
 from src.app.llm.llm_handler.graph_llm_handler import GraphLLMHandler
-from src.app.llm.llm_handler.llm_handler import LLMHandler
-from src.app.llm.services.chat_llm_service import ChatLLMService
+from llm_module.llm_handler.llm_handler import LLMHandler
+from llm_module.services.chat_llm_service import ChatLLMService
 from src.app.llm.services.graph_llm_service import GraphLLMService
-from src.app.llm.services.llm_service import LLMService
+from llm_module.services.llm_service import LLMService
 from src.app.server.base.app_graph import AppGraph
 from src.app.utils.model_util import get_default_model_config
 

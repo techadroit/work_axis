@@ -1,10 +1,10 @@
 from qdrant_client import QdrantClient, models
 
-from src.app.rag.pipeline.chunking_pipeline import ChunkingPipeline
-from src.app.rag.pipeline.embedding_pipeline import EmbeddingPipeline
-from src.app.rag.pipeline.loader_pipeline import LoadFilePipeline
-from src.app.rag.pipeline.log_pipeline import LogPipeline
-from src.app.rag.pipeline.vector_storage_pipeline import VectorStoragePipeline
+from rag.pipeline.chunking_pipeline import ChunkingPipeline
+from rag.pipeline.embedding_pipeline import EmbeddingPipeline
+from rag.pipeline.loader_pipeline import LoadFilePipeline
+from rag.pipeline.log_pipeline import LogPipeline
+from rag.pipeline.vector_storage_pipeline import VectorStoragePipeline
 
 client = QdrantClient(":memory:")  # Qdrant is running from RAM.
 

@@ -3,8 +3,8 @@ from typing import Any, Optional
 from langchain_core.messages import AIMessage
 from langchain_core.runnables import RunnableConfig
 
-from src.app.llm.agents.conversational.conversation_graph import create_conversation_graph
-from src.app.llm.agents.persistence.database_check_pointer import provide_checkpointer
+from agents.conversational.conversation_graph import create_conversation_graph
+from agents.persistence.database_check_pointer import provide_checkpointer
 from src.app.utils.logger_util import log_info, log_error
 
 

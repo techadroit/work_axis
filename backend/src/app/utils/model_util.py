@@ -1,6 +1,6 @@
 import os
 
-from src.app.llm.configuration.model_config import ModelConfig
+from llm_module.configuration.model_config import ModelConfig
 from src.app.llm.model_provider.model_provider_factory import get_primary_model
 from src.app.server.service.model_provider_service import provide_model_provider_service
 from src.app.utils.env_util import load_environment
@@ -24,9 +24,9 @@ def create_model_config(temperature: float = 0.7, top_p: float = 0.9, max_retrie
 
 def create_azure_config(model_config: ModelConfig = create_model_config()):
     load_environment('environment/.env.azure')
-    from src.app.llm.integrations.azure.azure_inference_provider import AzureInferenceProvider
-    from src.app.llm.integrations.azure.azure_llm_configuration import AzureLLMConfiguration
-    from src.app.llm.integrations.azure.azure_model_provider import AzureModelProvider
+    from llm_module.integrations.azure.azure_inference_provider import AzureInferenceProvider
+    from llm_module.integrations.azure.azure_llm_configuration import AzureLLMConfiguration
+    from llm_module.integrations.azure.azure_model_provider import AzureModelProvider
     return AzureLLMConfiguration(
         model_config=model_config,
         model_provider=AzureModelProvider(
@@ -42,9 +42,9 @@ def create_azure_config(model_config: ModelConfig = create_model_config()):
 
 def create_aws_bedrock_config(model_config: ModelConfig = create_model_config()):
     load_environment('environment/.env.aws')
-    from src.app.llm.integrations.aws.aws_bedrock_configuration import AwsBedrockConfiguration
-    from src.app.llm.integrations.aws.aws_model_provider import AwsModelProvider
-    from src.app.llm.integrations.aws.aws_inference_provider import AwsInferenceProvider
+    from llm_module.integrations.aws.aws_bedrock_configuration import AwsBedrockConfiguration
+    from llm_module.integrations.aws.aws_model_provider import AwsModelProvider
+    from llm_module.integrations.aws.aws_inference_provider import AwsInferenceProvider
     return AwsBedrockConfiguration(
         model_config=model_config,
         model_provider=AwsModelProvider(
@@ -60,8 +60,8 @@ def create_aws_bedrock_config(model_config: ModelConfig = create_model_config())
 
 
 def create_ollama_config(model_config: ModelConfig = create_model_config()):
-    from src.app.llm.integrations.ollama.ollama_llm_configurations import OllamaLLMConfigurations
-    from src.app.llm.integrations.ollama.ollama_model_provider import OllamaModelProvider
+    from llm_module.integrations.ollama.ollama_llm_configurations import OllamaLLMConfigurations
+    from llm_module.integrations.ollama.ollama_model_provider import OllamaModelProvider
 
     return OllamaLLMConfigurations(model_config=model_config, model_provider=OllamaModelProvider(
         model_name="llama3.1:8b"
@@ -69,9 +69,9 @@ def create_ollama_config(model_config: ModelConfig = create_model_config()):
 
 
 def create_together_config(model_config: ModelConfig = create_model_config()):
-    from src.app.llm.integrations.together.together_llm_configurations import TogetherLLMConfigurations
-    from src.app.llm.integrations.together.together_model_provider import TogetherModelProvider
-    from src.app.llm.integrations.together.together_inference_provider import TogetherInferenceProvider
+    from llm_module.integrations.together.together_llm_configurations import TogetherLLMConfigurations
+    from llm_module.integrations.together.together_model_provider import TogetherModelProvider
+    from llm_module.integrations.together.together_inference_provider import TogetherInferenceProvider
     load_environment(f'environment/.env.together')
     return TogetherLLMConfigurations(model_config=model_config,
                                      model_provider=TogetherModelProvider(model_name=os.getenv("MODEL_NAME")),
@@ -79,8 +79,8 @@ def create_together_config(model_config: ModelConfig = create_model_config()):
 
 
 def create_openai_config(model_config: ModelConfig = create_model_config()):
-    from src.app.llm.integrations.openai.openai_llm_configuration import OpenAILLMConfiguration
-    from src.app.llm.integrations.openai.openai_model_provider import OpenAIModelProvider
+    from llm_module.integrations.openai.openai_llm_configuration import OpenAILLMConfiguration
+    from llm_module.integrations.openai.openai_model_provider import OpenAIModelProvider
     load_environment('environment/.env.openai')
     return OpenAILLMConfiguration(
         model_config=model_config,
@@ -92,8 +92,8 @@ def create_openai_config(model_config: ModelConfig = create_model_config()):
 
 
 def create_claude_config(model_config: ModelConfig = create_model_config()):
-    from src.app.llm.integrations.anthropic.claude_llm_configurations import ClaudeLLMConfigurations
-    from src.app.llm.integrations.anthropic.claude_model_provider import ClaudeModelProvider
+    from llm_module.integrations.anthropic.claude_llm_configurations import ClaudeLLMConfigurations
+    from llm_module.integrations.anthropic.claude_model_provider import ClaudeModelProvider
     load_environment('environment/.env.anthropic')
     return ClaudeLLMConfigurations(
         model_config=model_config,
@@ -105,8 +105,8 @@ def create_claude_config(model_config: ModelConfig = create_model_config()):
 
 
 def create_gemini_config(model_config: ModelConfig = create_model_config()):
-    from src.app.llm.integrations.gemini.gemini_llm_configurations import GeminiLlmConfigurations
-    from src.app.llm.integrations.gemini.gemini_model_provider import GeminiModelProvider
+    from llm_module.integrations.gemini.gemini_llm_configurations import GeminiLlmConfigurations
+    from llm_module.integrations.gemini.gemini_model_provider import GeminiModelProvider
     load_environment('environment/.env.gemini')
     return GeminiLlmConfigurations(
         model_config=model_config,

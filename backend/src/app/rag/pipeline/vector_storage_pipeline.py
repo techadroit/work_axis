@@ -1,4 +1,4 @@
-from src.app.llm.configuration.embedding_configuration import EmbeddingConfiguration
+from llm_module.configuration.embedding_configuration import EmbeddingConfiguration
 from src.app.rag.pipeline.base_pipeline import BasePipeline
 from src.app.utils.logger_util import log_debug
 from vector_db.base.vector_db_client import VectorDbClient

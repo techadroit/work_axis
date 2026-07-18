@@ -1,4 +1,4 @@
-from src.app.rag.factory.rag_pipeline_factory import RagPipelineFactory
+from rag.factory.rag_pipeline_factory import RagPipelineFactory
 
 # log_pipeline = LogPipeline()
 # vector_db_config = VectorDbConfig()

@@ -3,11 +3,11 @@ import asyncio
 from langchain_core.messages import HumanMessage
 from langgraph.constants import START
 
-from src.app.llm.llm_handler.llm_handler import LLMHandler
-from src.app.llm.llm_handler.chat_llm_handler import ChatLLMHandler
-from src.app.llm.llm_handler.graph_llm_handler import GraphLLMHandler
-from src.app.llm.services.graph_llm_service import GraphLLMService
-from src.app.server.base.app_graph import AppState
+from llm_module.llm_handler.llm_handler import LLMHandler
+from llm_module.llm_handler.chat_llm_handler import ChatLLMHandler
+from agents.llm_handler.graph_llm_handler import GraphLLMHandler
+from agents.services.graph_llm_service import GraphLLMService
+from agents.app_graph import AppState
 from src.app.utils.logger_util import log_debug, log_response
 from src.app.utils.model_util import get_default_model_config
 
@@ -50,7 +50,7 @@ def response_node(app_state: AppState):
 
 
 def create_graph():
-    from src.app.server.base.app_graph import AppGraph
+    from agents.app_graph import AppGraph
     from langgraph.graph import StateGraph
 
     graph = StateGraph(AppState)
@@ -77,7 +77,7 @@ async def async_response_node(app_state: AppState, config):
 
 
 def create_async_graph():
-    from src.app.server.base.app_graph import AppGraph
+    from agents.app_graph import AppGraph
     from langgraph.graph import StateGraph
 
     graph = StateGraph(AppState)

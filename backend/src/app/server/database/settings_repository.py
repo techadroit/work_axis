@@ -1,4 +1,4 @@
-from src.app.llm.model_provider.model_provider_name import OPENAI_NAME, GOOGLE_NAME, AZURE_NAME, AWS_NAME, OLLAMA_NAME, \
+from llm_module.model_provider.model_provider_name import OPENAI_NAME, GOOGLE_NAME, AZURE_NAME, AWS_NAME, OLLAMA_NAME, \
     ANTHROPIC_NAME
 
 

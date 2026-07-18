@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from src.app.llm.model_downloader import download_embedding_model
+from llm_module.model_downloader import download_embedding_model
 from src.app.server.database.db_session import initialize_database
 from src.app.server.routes.chat_api_routes import chat_api_router
 from src.app.server.routes.chat_session_api_routes import chat_session_api_router

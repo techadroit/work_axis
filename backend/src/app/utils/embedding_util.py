@@ -1,6 +1,6 @@
 import os
 
-from src.app.llm.configuration.embedding_configuration import EmbeddingConfiguration
+from llm_module.configuration.embedding_configuration import EmbeddingConfiguration
 from core.utils.constants import ModelProviderName, InferenceProviderName
 from src.app.utils.env_util import load_environment
 from core.utils.file_util import get_embedding_models_path
@@ -36,7 +36,7 @@ def _get_embedding_config(model_name: str = "embeddinggemma:latest",
 
 
 def _get_openai_embeddings():
-    from src.app.llm.embeddings.embedding_factory import create_embedding_model
+    from llm_module.embeddings.embedding_factory import create_embedding_model
 
     # load_environment("environment/.env.openai")
     load_environment("../environment/.env.openai")
@@ -53,7 +53,7 @@ def _get_openai_embeddings():
 
 
 def _get_azure_embeddings():
-    from src.app.llm.embeddings.embedding_factory import create_embedding_model
+    from llm_module.embeddings.embedding_factory import create_embedding_model
 
     load_environment("environment/.env.azure")
     config = EmbeddingConfiguration(
@@ -75,7 +75,7 @@ def _create_ollama_embedding_model():
        Returns:
            AppEmbeddingModel: An instance of AppEmbeddingModel configured for Ollama.
        """
-    from src.app.llm.embeddings.embedding_factory import create_embedding_model
+    from llm_module.embeddings.embedding_factory import create_embedding_model
 
     config = EmbeddingConfiguration(
         model_name="embeddinggemma:latest",
@@ -97,7 +97,7 @@ def create_sentence_transformer_embedding_model(model_name: str = str(get_embedd
     Returns:
         AppEmbeddingModel: An instance of AppEmbeddingModel configured for SentenceTransformer.
     """
-    from src.app.llm.embeddings.embedding_factory import create_embedding_model
+    from llm_module.embeddings.embedding_factory import create_embedding_model
 
     config = EmbeddingConfiguration(
         model_name=model_name,

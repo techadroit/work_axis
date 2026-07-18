@@ -1,0 +1,26 @@
+[project]
+name = "rag"
+version = "0.1.0"
+description = "Reusable RAG (document ingestion/retrieval) pipeline module for PersonalAI"
+authors = [{ name = "PersonalAI Team" }]
+requires-python = ">=3.12,<3.13"
+dependencies = [
+	"langchain-text-splitters",
+	"sentence-transformers",
+	"docling",
+	"lancedb",
+	"pydantic",
+	"core",
+	"vector-db",
+]
+
+[project.scripts]
+rag = "rag:main"
+
+[tool.uv.sources]
+core = { workspace = true }
+vector-db = { workspace = true }
+
+[build-system]
+requires = ["uv_build>=0.11.8,<0.12.0"]
+build-backend = "uv_build"

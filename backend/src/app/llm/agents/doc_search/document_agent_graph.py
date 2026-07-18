@@ -2,11 +2,11 @@ from langchain_core.messages import SystemMessage, ToolMessage, AIMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import StateGraph, START, END
 
-from src.app.llm.ToolHandler import ToolHandler
+from llm_module.ToolHandler import ToolHandler
 from src.app.llm.agents.AgentConstants import APP_MESSAGES
 from src.app.llm.agents.doc_search.document_agent_tools import search_documents_tool
-from src.app.llm.llm_handler.chat_llm_handler import ChatLLMHandler
-from src.app.llm.services.chat_llm_service import get_chat_llm_service
+from llm_module.llm_handler.chat_llm_handler import ChatLLMHandler
+from llm_module.services.chat_llm_service import get_chat_llm_service
 from src.app.llm.services.llm_service_factory import LLMServiceFactory
 from src.app.prompts.markdown_response_format import mark_down_response_format
 from src.app.server.base.app_graph import AppGraph, DocumentState

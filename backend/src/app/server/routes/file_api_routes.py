@@ -6,8 +6,8 @@ from fastapi import APIRouter, HTTPException, UploadFile, Form
 from langchain_core.messages import HumanMessage
 from starlette.responses import FileResponse
 
-from src.app.llm.agents.persistence.database_check_pointer import provide_checkpointer
-from src.app.rag.factory.rag_pipeline_factory import RagPipelineFactory
+from agents.persistence.database_check_pointer import provide_checkpointer
+from rag.factory.rag_pipeline_factory import RagPipelineFactory
 from src.app.server.messages.ChatMessages import create_chat_message, ContentType, convert_chat_messages_to_request, ASSISTANT, \
     AgentMode
 from src.app.server.processor.upload_file_handler import UploadFileHandler
