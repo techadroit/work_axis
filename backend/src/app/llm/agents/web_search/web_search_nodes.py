@@ -5,9 +5,9 @@ from core.errors import RetryableError
 from src.app.llm.agents.AgentConstants import APP_MESSAGES
 from web_search import tool_extract_webpage_content, tool_search_web
 
-from src.app.llm.llm_handler.chat_llm_handler import ChatLLMHandler
-from src.app.llm.services.chat_llm_service import get_chat_llm_service
-from src.app.llm.services.llm_service import get_llm_service
+from llm_module.llm_handler.chat_llm_handler import ChatLLMHandler
+from llm_module.services.chat_llm_service import get_chat_llm_service
+from llm_module.services.llm_service import get_llm_service
 from src.app.llm.services.llm_service_factory import LLMServiceFactory
 from src.app.prompts.markdown_response_format import mark_down_response_format
 from src.app.server.base.app_graph import WebSearchState

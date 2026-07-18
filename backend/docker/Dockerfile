@@ -19,6 +19,9 @@ COPY pyproject.toml uv.lock* ./
 COPY modules/web_search/ modules/web_search/
 COPY modules/core/ modules/core/
 COPY modules/vector_db/ modules/vector_db/
+COPY modules/llm_module/ modules/llm_module/
+COPY modules/rag/ modules/rag/
+COPY modules/agents/ modules/agents/
 RUN UV_LINK_MODE=copy uv sync --no-dev
 
 # ── Runtime stage ─────────────────────────────────────────────────────────────

@@ -4,9 +4,9 @@ from langgraph.constants import START
 from langgraph.graph import StateGraph
 
 from src.app.llm.agents.AgentConstants import APP_MESSAGES
-from src.app.llm.llm_handler.chat_llm_handler import ChatLLMHandler, get_chat_llm_handler
+from llm_module.llm_handler.chat_llm_handler import ChatLLMHandler, get_chat_llm_handler
 from src.app.llm.llm_handler.graph_llm_handler import GraphLLMHandler
-from src.app.llm.services.chat_llm_service import get_chat_llm_service
+from llm_module.services.chat_llm_service import get_chat_llm_service
 from src.app.llm.services.graph_llm_service import get_graph_llm_service
 from src.app.server.base.app_graph import AppGraph, ConversationState
 from src.app.utils.logger_util import log_debug, log_response

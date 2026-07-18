@@ -1,20 +1,20 @@
-from src.app.llm.configuration.model_config import ModelConfig
-from src.app.llm.integrations.anthropic.claude_llm_configurations import ClaudeLLMConfigurations
-from src.app.llm.integrations.anthropic.claude_model_provider import ClaudeModelProvider
-from src.app.llm.integrations.aws.aws_bedrock_configuration import AwsBedrockConfiguration
-from src.app.llm.integrations.aws.aws_inference_provider import AwsInferenceProvider
-from src.app.llm.integrations.aws.aws_model_provider import AwsModelProvider
-from src.app.llm.integrations.azure.azure_inference_provider import AzureInferenceProvider
-from src.app.llm.integrations.azure.azure_llm_configuration import AzureLLMConfiguration
-from src.app.llm.integrations.azure.azure_model_provider import AzureModelProvider
-from src.app.llm.integrations.gemini.gemini_llm_configurations import GeminiLlmConfigurations
-from src.app.llm.integrations.gemini.gemini_model_provider import GeminiModelProvider
-from src.app.llm.integrations.ollama.ollama_llm_configurations import OllamaLLMConfigurations
-from src.app.llm.integrations.ollama.ollama_model_provider import OllamaModelProvider
-from src.app.llm.integrations.openai.openai_llm_configuration import OpenAILLMConfiguration
-from src.app.llm.integrations.openai.openai_model_provider import OpenAIModelProvider
-from src.app.llm.integrations.together.together_model_provider import TogetherModelProvider
-from src.app.llm.model_provider.model_provider_name import AZURE_NAME, AWS_NAME, OLLAMA_NAME, OPENAI_NAME, ANTHROPIC_NAME, \
+from llm_module.configuration.model_config import ModelConfig
+from llm_module.integrations.anthropic.claude_llm_configurations import ClaudeLLMConfigurations
+from llm_module.integrations.anthropic.claude_model_provider import ClaudeModelProvider
+from llm_module.integrations.aws.aws_bedrock_configuration import AwsBedrockConfiguration
+from llm_module.integrations.aws.aws_inference_provider import AwsInferenceProvider
+from llm_module.integrations.aws.aws_model_provider import AwsModelProvider
+from llm_module.integrations.azure.azure_inference_provider import AzureInferenceProvider
+from llm_module.integrations.azure.azure_llm_configuration import AzureLLMConfiguration
+from llm_module.integrations.azure.azure_model_provider import AzureModelProvider
+from llm_module.integrations.gemini.gemini_llm_configurations import GeminiLlmConfigurations
+from llm_module.integrations.gemini.gemini_model_provider import GeminiModelProvider
+from llm_module.integrations.ollama.ollama_llm_configurations import OllamaLLMConfigurations
+from llm_module.integrations.ollama.ollama_model_provider import OllamaModelProvider
+from llm_module.integrations.openai.openai_llm_configuration import OpenAILLMConfiguration
+from llm_module.integrations.openai.openai_model_provider import OpenAIModelProvider
+from llm_module.integrations.together.together_model_provider import TogetherModelProvider
+from llm_module.model_provider.model_provider_name import AZURE_NAME, AWS_NAME, OLLAMA_NAME, OPENAI_NAME, ANTHROPIC_NAME, \
     GOOGLE_NAME
 from core.schemas.model_provider_schemas import ModelProvider
 from src.app.server.service.model_provider_service import provide_model_provider_service

@@ -3,9 +3,9 @@ import asyncio
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_mcp_adapters.client import MultiServerMCPClient
 
-from src.app.llm.ToolHandler import ToolHandler
-from src.app.llm.llm_handler.chat_llm_handler import ChatLLMHandler
-from src.app.llm.services.agent_service import AgentService
+from llm_module.ToolHandler import ToolHandler
+from llm_module.llm_handler.chat_llm_handler import ChatLLMHandler
+from llm_module.services.agent_service import AgentService
 from src.app.utils.logger_util import log_response
 from src.app.utils.model_util import get_default_model_config
 

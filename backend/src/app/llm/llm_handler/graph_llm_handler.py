@@ -1,10 +1,10 @@
 from typing import Any
 
-from src.app.llm.ToolHandler import ToolHandler
-from src.app.llm.configuration.embedding_configuration import EmbeddingConfiguration
-from src.app.llm.configuration.llm_configuration import LlmConfiguration
-from src.app.llm.llm_handler.base_llm_handler import BaseLLMHandler
-from src.app.llm.llm_messages.base_llm_messages import LLMInputMessageType
+from llm_module.ToolHandler import ToolHandler
+from llm_module.configuration.embedding_configuration import EmbeddingConfiguration
+from llm_module.configuration.llm_configuration import LlmConfiguration
+from llm_module.llm_handler.base_llm_handler import BaseLLMHandler
+from llm_module.llm_messages.base_llm_messages import LLMInputMessageType
 from src.app.server.base.app_graph import AppGraph
 
 

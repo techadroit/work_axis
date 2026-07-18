@@ -40,6 +40,9 @@ dependencies = [
 	"core",
 	"web-search",
 	"vector-db",
+	"llm-module",
+	"rag",
+	"agents",
 ]
 
 [dependency-groups]
@@ -55,12 +58,18 @@ members = [
 	"modules/core",
     "modules/web_search",
     "modules/vector_db",
+    "modules/llm_module",
+    "modules/rag",
+    "modules/agents",
 ]
 
 [tool.uv.sources]
 core = { workspace = true }
 web-search = { workspace = true }
 vector-db = { workspace = true }
+llm-module = { workspace = true }
+rag = { workspace = true }
+agents = { workspace = true }
 
 [build-system]
 requires = ["setuptools>=69"]
