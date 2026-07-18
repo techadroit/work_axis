@@ -7,7 +7,7 @@ from src.app.llm.agents.chat_mode.chat_agent_node import chat_agent_node
 from src.app.llm.agents.persistence.database_check_pointer import provide_checkpointer
 from src.app.llm.llm_handler.graph_llm_handler import get_graph_llm_handler
 from src.app.llm.services.graph_llm_service import get_graph_llm_service
-from src.app.server.messages.ChatMessages import AgentMode
+from core.utils.constants import AgentMode
 from src.app.utils.logger_util import log_debug
 
 

@@ -16,7 +16,7 @@ from src.app.llm.integrations.openai.openai_model_provider import OpenAIModelPro
 from src.app.llm.integrations.together.together_model_provider import TogetherModelProvider
 from src.app.llm.model_provider.model_provider_name import AZURE_NAME, AWS_NAME, OLLAMA_NAME, OPENAI_NAME, ANTHROPIC_NAME, \
     GOOGLE_NAME
-from src.app.server.schemas.model_provider_schemas import ModelProvider
+from core.schemas.model_provider_schemas import ModelProvider
 from src.app.server.service.model_provider_service import provide_model_provider_service
 from src.app.utils.logger_util import log_debug
 

@@ -405,10 +405,14 @@ version = "0.1.0"
 source = { editable = "modules/core" }
 dependencies = [
     { name = "loguru" },
+    { name = "pydantic" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "loguru", specifier = "~=0.7.3" }]
+requires-dist = [
+    { name = "loguru", specifier = "~=0.7.3" },
+    { name = "pydantic" },
+]
 
 [[package]]
 name = "cryptography"

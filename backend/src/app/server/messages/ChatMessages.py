@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 from src.app.server.messages.BaseChatMessage import BaseChatMessage
 from src.app.server.schemas import MessageCreateRequest
+from core.utils.constants import AgentMode
 from core.utils.time_util import get_utc_time
 
 USER = "user"
@@ -13,13 +14,6 @@ ASSISTANT = "assistant"
 
 class ChatMessageBody(BaseModel):
     messages: str
-
-
-class AgentMode(str, Enum):
-    DOCUMENT = "document"
-    WEBSEARCH = "websearch"
-    AGENT = "agent"
-    OFFLINE = "offline"
 
 
 class MessageType(str, Enum):

@@ -1,6 +1,6 @@
 from src.app.llm.agents.AgentConstants import APP_MESSAGES
 from src.app.server.base.app_graph import AppState
-from src.app.server.config.app_config import get_app_config
+from core.app_config import get_app_config
 
 app_config = get_app_config()
 
