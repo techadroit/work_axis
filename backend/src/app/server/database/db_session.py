@@ -1,3 +1,4 @@
+import threading
 from pathlib import Path
 
 import duckdb
@@ -8,6 +9,24 @@ from src.app.utils.logger_util import log_info, log_error, log_debug
 _path = get_data_path()/"database"/"app.db"
 log_debug(_path)
 DB_PATH = Path(_path)
+
+# DuckDB only allows a single OS-level connection to a database file at a time,
+# even from within the same process. Repositories open/close a connection per
+# call, so concurrent requests must share one underlying connection and hand
+# out cursors (independent, thread-safe handles onto that same connection)
+# instead of re-opening the file, or they collide with "file is being used by
+# another process" and silently lose writes.
+_main_connection: "duckdb.DuckDBPyConnection | None" = None
+_main_connection_lock = threading.Lock()
+
+
+def _get_main_connection() -> "duckdb.DuckDBPyConnection":
+    global _main_connection
+    if _main_connection is None:
+        with _main_connection_lock:
+            if _main_connection is None:
+                _main_connection = duckdb.connect(str(DB_PATH))
+    return _main_connection
 
 TABLE_CHAT_SESSIONS = "chat_sessions"
 TABLE_CHAT_MESSAGES = "chat_messages"
@@ -112,9 +131,10 @@ def initialize_database():
 def get_db_connection():
     """
     Get a connection to the DuckDB database.
-    Returns a duckdb.DuckDBPyConnection object.
+    Returns a cursor (independent handle) on the shared connection so callers
+    can use and close() it per-request without contending for the file lock.
     """
-    return duckdb.connect(str(DB_PATH))
+    return _get_main_connection().cursor()
 
 
 # if __name__ == "__main__":

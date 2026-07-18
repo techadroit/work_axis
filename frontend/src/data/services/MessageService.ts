@@ -25,7 +25,7 @@ export class MessageService {
   private messageHandlers: Set<(message: any) => void> = new Set();
   private stateChangeHandlers: Set<(state: ConnectionState) => void> = new Set();
 
-  constructor(baseURL: string = 'http://127.0.0.1:8001/ws') {
+  constructor(baseURL: string = 'ws://127.0.0.1:8001/ws') {
     this.baseURL = baseURL;
   }
 
