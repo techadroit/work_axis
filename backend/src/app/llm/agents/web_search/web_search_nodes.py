@@ -1,7 +1,7 @@
 from langchain_core.messages import SystemMessage, AIMessage
 from langchain_core.prompts import PromptTemplate
 
-from src.app.base.custom_errors import RetryableError
+from core.errors import RetryableError
 from src.app.llm.agents.AgentConstants import APP_MESSAGES
 from web_search import tool_extract_webpage_content, tool_search_web
 

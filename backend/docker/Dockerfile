@@ -18,6 +18,7 @@ COPY --from=ghcr.io/astral-sh/uv:0.11.8 /uv /uvx /bin/
 COPY pyproject.toml uv.lock* ./
 COPY modules/web_search/ modules/web_search/
 COPY modules/core/ modules/core/
+COPY modules/vector_db/ modules/vector_db/
 RUN UV_LINK_MODE=copy uv sync --no-dev
 
 # ── Runtime stage ─────────────────────────────────────────────────────────────

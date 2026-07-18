@@ -1,3 +1,2 @@
-class RetryableError(Exception):
-    """Exception raised for errors that are temporary and may succeed if retried."""
-    pass
+# Shim – re-exports from the core module so existing imports keep working unchanged.
+from core.errors import RetryableError  # noqa: F401

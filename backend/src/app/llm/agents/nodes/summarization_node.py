@@ -4,7 +4,7 @@ from langgraph.types import Overwrite
 from src.app.llm.agents.AgentConstants import APP_MESSAGES
 from src.app.llm.services.llm_service_factory import LLMServiceFactory
 from src.app.server.base.app_graph import AppState
-from src.app.server.config.app_config import get_app_config
+from core.app_config import get_app_config
 from src.app.utils.logger_util import log_debug
 
 SUMMARIZATION_PROMPT = """You are a conversation summarizer. Your task is to create a concise summary of the conversation history while preserving key information.
