@@ -27,9 +27,17 @@ export class UserService {
       const allUsers = await this.userRepository.getAllUserDetails();
 
       if (allUsers.length > 0) {
-        // User exists, return the first user ID
+        // User exists locally - verify it still exists server-side before
+        // trusting it. Local storage can outlive the backend database (e.g.
+        // after a reset), leaving a stale ID that fails every request.
         const userId = allUsers[0].userId;
-        return userId;
+        try {
+          await UserApi.getUser(userId);
+          return userId;
+        } catch (error) {
+          logger.warn('Cached user not found on server, creating a new one', { userId, error });
+          await this.userRepository.deleteUserDetail(userId);
+        }
       }
 
       const response = await UserApi.loginAsAnonymous();
