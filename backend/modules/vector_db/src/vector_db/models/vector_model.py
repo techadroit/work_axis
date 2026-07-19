@@ -9,3 +9,4 @@ class VectorModel(BaseModel):
     embedding: list[float] = None
     payload: Payload
     distance: float = None
+    id: str = None

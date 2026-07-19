@@ -1,0 +1,16 @@
+[project]
+name = "email-ingestion"
+version = "0.1.0"
+description = "Email ingestion module for PersonalAI - Gmail OAuth + mbox/eml file import, normalized into a shared EmailDocument shape for RAG ingestion"
+authors = [{ name = "PersonalAI Team" }]
+requires-python = ">=3.12,<3.13"
+dependencies = [
+	"google-auth-oauthlib~=1.2.0",
+	"google-auth~=2.34.0",
+	"httpx",
+	"beautifulsoup4~=4.12.2",
+]
+
+[build-system]
+requires = ["uv_build>=0.11.8,<0.12.0"]
+build-backend = "uv_build"

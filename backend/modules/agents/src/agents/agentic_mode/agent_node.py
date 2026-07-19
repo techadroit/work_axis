@@ -9,6 +9,7 @@ from core.errors import RetryableError
 from agents.AgentConstants import APP_MESSAGES
 from agents.conversational.conversation_graph import create_conversation_graph
 from agents.doc_search.document_agent_graph import create_document_agent_graph
+from agents.email_search.email_agent_graph import create_email_agent_graph
 from agents.nodes.conditional_edges import should_generate_title
 from agents.nodes.summarization_node import summarization_node
 from agents.nodes.title_generation_node import generate_title_node
@@ -24,7 +25,7 @@ app_config = get_app_config()
 
 
 class AgentRouteResponse(BaseModel):
-    route: Literal["conversation", "web_search", "document_search"] = Field(
+    route: Literal["conversation", "web_search", "document_search", "email_search"] = Field(
         description="The selected route based on user intent"
     )
 
@@ -45,6 +46,7 @@ You will be provided with chat history between a user and an AI assistant.
 1. **conversation** - For greetings, farewells, or questions answerable from conversation history
 2. **web_search** - For queries requiring current/external information from the internet
 3. **document_search** - For queries about uploaded documents or files
+4. **email_search** - For queries about the user's own emails, inbox, or specific messages/senders
 
 ### Important Rules:
 - Multiple routes are not allowed.
@@ -52,6 +54,7 @@ You will be provided with chat history between a user and an AI assistant.
 - Output ONLY valid JSON in the exact format shown
 - Do not include reasoning, explanations, or multiple responses
 - If uncertain, default to "conversation"
+- **Priority rule**: the words "email", "emails", "inbox", or "mailbox" appearing ANYWHERE in the user's message - in any word order or phrasing (e.g. "my emails", "my latest email content", "email I got from X", "what did X email me", "check my inbox for...") - ALWAYS mean you must choose **email_search**. This applies even if the message also names a product, company, sender, or topic that might otherwise suggest web_search or conversation. Only skip this rule if the message is asking HOW to use an email client/app rather than asking about actual email content.
 
 <ConversationHistory>
 {conversation_history}
@@ -63,6 +66,7 @@ def agent_mode(checkpointer=None, session_id=None) -> AppGraph:
     document_node = create_document_agent_graph(checkpointer=None)
     web_search_node = create_web_search_agent(checkpointer=None)
     conversation_node = create_conversation_graph(checkpointer=None)
+    email_node = create_email_agent_graph(checkpointer=None)
     graph = StateGraph(AppState)
     graph.add_node("summarization_node", summarization_node)
     graph.add_node("title_generation_node", generate_title_node)
@@ -71,6 +75,7 @@ def agent_mode(checkpointer=None, session_id=None) -> AppGraph:
     graph.add_node("conversation_node", conversation_node.get_graph())
     graph.add_node("document_node", document_node.get_graph())
     graph.add_node("web_search_node", web_search_node.get_graph())
+    graph.add_node("email_node", email_node.get_graph())
     graph.add_conditional_edges(
         "summarization_node",
         should_generate_title,
@@ -85,6 +90,7 @@ def agent_mode(checkpointer=None, session_id=None) -> AppGraph:
         {
             "web_search": "web_search_node",
             "document_search": "document_node",
+            "email_search": "email_node",
             "conversation": "conversation_node"
         })
 
@@ -94,6 +100,7 @@ def agent_mode(checkpointer=None, session_id=None) -> AppGraph:
     graph.add_edge("web_search_node", END)
     graph.add_edge("conversation_node", END)
     graph.add_edge("document_node", END)
+    graph.add_edge("email_node", END)
     graph = AppGraph(graph=graph,
                      emitting_node=["generator_node", "web_search_conversation_node", "answer", "conversation_node"],
                      check_pointer=checkpointer)

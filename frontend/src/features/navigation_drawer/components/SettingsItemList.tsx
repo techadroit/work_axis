@@ -1,5 +1,5 @@
 import { List, ListItem, ListItemButton, ListItemIcon, ListItemText, Box } from '@mui/material';
-import { Settings as SettingsIcon, SmartToy as SmartToyIcon } from '@mui/icons-material';
+import { Settings as SettingsIcon, SmartToy as SmartToyIcon, Mail as MailIcon } from '@mui/icons-material';
 import { getSettingsItemStyles } from '../../../design_system/styles/navigation_styles/navigationStyles.ts';
 import { ROUTES } from '../../../shared/utils';
 import { UiSectionTitle } from '../../../shared/components/ui';
@@ -18,6 +18,7 @@ interface SettingsItemListProps {
 const settingsItems: SettingsItem[] = [
   { text: 'General', icon: <SettingsIcon />, path: ROUTES.SETTINGS_GENERAL },
   { text: 'Model Provider', icon: <SmartToyIcon />, path: ROUTES.SETTINGS_MODELS },
+  { text: 'Email Integrations', icon: <MailIcon />, path: ROUTES.SETTINGS_EMAIL_INTEGRATIONS },
 ];
 
 /**

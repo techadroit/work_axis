@@ -1,6 +1,6 @@
 from rag.models.vector_model import VectorModel, Payload
 from rag.pipeline.base_pipeline import BasePipeline
-from src.app.utils.embedding_util import create_sentence_transformer_embedding_model, create_default_embedding_model
+from src.app.utils.embedding_util import get_cached_default_embedding_model
 from core.utils.logger_util import log_debug
 
 
@@ -16,7 +16,7 @@ class EmbeddingPipeline(BasePipeline):
         metadata = {}
         if session_id is not None:
             metadata = {"session_id": session_id, "user_id": user_id}
-        embedding_model = create_default_embedding_model()
+        embedding_model = get_cached_default_embedding_model()
         result = []
         for document in data:
             embeddings = embedding_model.embed_documents([document])

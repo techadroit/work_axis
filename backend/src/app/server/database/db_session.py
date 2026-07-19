@@ -32,6 +32,8 @@ TABLE_CHAT_SESSIONS = "chat_sessions"
 TABLE_CHAT_MESSAGES = "chat_messages"
 TABLE_USERS = "users"
 TABLE_MODEL_PROVIDERS = "model_providers"
+TABLE_EMAIL_PROVIDER_CREDENTIALS = "email_provider_credentials"
+TABLE_EMAIL_ACCOUNTS = "email_accounts"
 
 
 def initialize_database():
@@ -92,10 +94,17 @@ def initialize_database():
             )
         """)
 
-        # Create indexes for better query performance
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_chat_sessions_user_id ON chat_sessions(user_id)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_chat_messages_chat_session_id ON chat_messages(chat_session_id)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_chat_messages_created_at ON chat_messages(created_at)")
+        # Deliberately no explicit secondary indexes here (previously:
+        # idx_chat_sessions_user_id, idx_chat_messages_chat_session_id,
+        # idx_chat_messages_created_at). Hit a reproducible DuckDB (1.5.2)
+        # ART index corruption bug where combining a foreign key's implicit
+        # index with additional secondary indexes on the same table, under a
+        # delete-heavy workload (deleting a chat session cascades to
+        # deleting its messages), poisons the shared connection for the
+        # whole app until restart. See the same fix applied to
+        # email_accounts above. These tables are small (personal local use),
+        # so the PK/FK indexes alone are sufficient - the extra indexes
+        # weren't worth the corruption risk.
 
         # Create model_providers table
         conn.execute(f"""
@@ -117,6 +126,66 @@ def initialize_database():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
+        """)
+
+        # Create email_provider_credentials table (one row per provider,
+        # e.g. 'gmail' - holds the user's own OAuth Client ID/Secret)
+        conn.execute(f"""
+            CREATE TABLE IF NOT EXISTS {TABLE_EMAIL_PROVIDER_CREDENTIALS} (
+                id VARCHAR PRIMARY KEY,
+                provider VARCHAR NOT NULL UNIQUE,
+                client_id VARCHAR NOT NULL,
+                client_secret_encrypted VARCHAR NOT NULL,
+                redirect_uri VARCHAR NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        # Create email_accounts table (one row per connected mailbox or
+        # file-import batch)
+        conn.execute(f"""
+            CREATE TABLE IF NOT EXISTS {TABLE_EMAIL_ACCOUNTS} (
+                id VARCHAR PRIMARY KEY,
+                user_id VARCHAR NOT NULL,
+                provider VARCHAR NOT NULL DEFAULT 'gmail',
+                email_address VARCHAR NOT NULL,
+                display_name VARCHAR,
+                access_token_encrypted VARCHAR,
+                refresh_token_encrypted VARCHAR,
+                token_expiry TIMESTAMP,
+                scopes VARCHAR,
+                status VARCHAR NOT NULL DEFAULT 'connected',
+                last_sync_status VARCHAR DEFAULT 'idle',
+                last_sync_error TEXT,
+                last_synced_at TIMESTAMP,
+                last_history_id VARCHAR,
+                total_messages_synced INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(user_id),
+                UNIQUE (user_id, provider, email_address)
+            )
+        """)
+        # Deliberately no separate index on user_id here: this table hit a
+        # reproducible DuckDB (1.5.2) ART index corruption bug in testing
+        # when combining this UNIQUE constraint's implicit index with a
+        # second explicit index on an UPDATE-then-DELETE row lifecycle
+        # (repeatable: insert -> update(mark_synced_now COALESCE pattern) ->
+        # delete). The UNIQUE constraint's index already covers user_id
+        # lookups reasonably for this table's expected small row count, so
+        # the extra index isn't worth the corruption risk.
+
+        # Sync jobs run in-process (asyncio.to_thread), so a crash/restart
+        # mid-sync leaves last_sync_status='running' with no worker attached
+        # - the UI would show "syncing" forever. Any row still 'running' at
+        # startup is by definition orphaned; mark it failed so the user can
+        # retry.
+        conn.execute(f"""
+            UPDATE {TABLE_EMAIL_ACCOUNTS}
+            SET last_sync_status = 'error',
+                last_sync_error = 'Sync interrupted by app restart - please sync again.'
+            WHERE last_sync_status = 'running'
         """)
 
         log_info(f"Database initialized successfully at {DB_PATH}")

@@ -3,7 +3,7 @@ import traceback
 
 from fastapi import APIRouter
 from langchain_core.prompts import ChatPromptTemplate
-from starlette.websockets import WebSocket
+from starlette.websockets import WebSocket, WebSocketDisconnect
 
 from src.app.server.messages.message_parser import parse_message
 from src.app.server.routes.message_router import MessageService
@@ -38,17 +38,26 @@ prompt_template = ChatPromptTemplate.from_messages([
 @websocket_router.websocket("/{session_id}")
 async def websocket_endpoint(websocket: WebSocket, session_id: str):
     await websocket.accept()
-    while True:
-        message = await websocket.receive_text()
-        log_debug(f"{session_id} : {message}")
-        asyncio.create_task(handle_incoming_message(message, session_id, websocket))
+    try:
+        while True:
+            message = await websocket.receive_text()
+            log_debug(f"{session_id} : {message}")
+            asyncio.create_task(handle_incoming_message(message, session_id, websocket))
+    except WebSocketDisconnect:
+        # Clients disconnect constantly (tab close, reload, dev hot-reload);
+        # letting this propagate dumps a ~50-line ASGI traceback per
+        # disconnect, burying real errors in the logs.
+        log_debug(f"WebSocket disconnected: {session_id}")
 
 
 async def handle_incoming_message(message: str, session_id: str, websocket: WebSocket):
     message = parse_message(message)
     try:
         message_service = MessageService()
-        await message_service.handle_messages(messages=message, session_id=session_id,
+        # The websocket path segment is the connecting user's id (frontend
+        # connects to /ws/{userId}), despite the "session_id" name here -
+        # threaded through as user_id for user-scoped tools like email search.
+        await message_service.handle_messages(messages=message, session_id=session_id, user_id=session_id,
                                               stream_handler=WebsocketStreamHandler(websocket))
     except Exception as e:
         log_info(f"Error during streaming: {e}")

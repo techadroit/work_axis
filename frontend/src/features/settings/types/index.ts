@@ -8,3 +8,12 @@ export type {
   SaveProvidersPayload
 } from './modelProvider.types';
 
+export type {
+  EmailProviderCredentialsCreate,
+  EmailProviderCredentials,
+  EmailAccount,
+  EmailAccountResponse,
+  EmailSyncStatusResponse,
+  OAuthUrlResponse,
+} from './emailIntegration.types';
+

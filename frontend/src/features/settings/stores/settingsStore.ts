@@ -2,6 +2,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import { createContext } from 'react';
 import { createDispatchHook, createSelectorHook, type ReactReduxContextValue } from 'react-redux';
 import modelProviderReducer from './modelProviderSlice';
+import emailIntegrationReducer from './emailIntegrationSlice';
 
 /**
  * Settings Store - Separate store for settings functionality
@@ -9,6 +10,7 @@ import modelProviderReducer from './modelProviderSlice';
 export const settingsStore = configureStore({
   reducer: {
     modelProvider: modelProviderReducer,
+    emailIntegration: emailIntegrationReducer,
   },
 });
 

@@ -1,4 +1,5 @@
 import os
+from functools import lru_cache
 
 from llm_module.configuration.embedding_configuration import EmbeddingConfiguration
 from core.utils.constants import ModelProviderName, InferenceProviderName
@@ -118,3 +119,16 @@ def create_default_embedding_model():
     return create_sentence_transformer_embedding_model()
     # return _create_ollama_embedding_model()
     # return _get_openai_embeddings()
+
+
+@lru_cache(maxsize=1)
+def get_cached_default_embedding_model():
+    """
+    Cached variant of create_default_embedding_model().
+
+    The underlying SentenceTransformerEmbeddings model is expensive to
+    construct and is read-only/thread-safe once built, so callers doing many
+    embed calls in a loop (e.g. bulk email ingestion) should use this instead
+    of constructing a fresh model per call.
+    """
+    return create_default_embedding_model()

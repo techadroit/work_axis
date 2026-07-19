@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, shell, ipcMain } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { spawn } from 'child_process';
@@ -75,6 +75,15 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
 }
+
+ipcMain.handle('open-external', (_event, url) => {
+  // Only allow http(s) URLs - this is invoked from the renderer, so don't
+  // let it be used to launch arbitrary local files/protocols.
+  if (typeof url === 'string' && /^https?:\/\//i.test(url)) {
+    return shell.openExternal(url);
+  }
+  return Promise.reject(new Error('Refused to open non-http(s) URL'));
+});
 
 app.whenReady().then(() => {
   startServer();

@@ -7,7 +7,7 @@ import {chatStore, ChatStoreContext} from "../features/chat/stores/chatStore.ts"
 import {ChatInterface} from "../features/chat/components/ChatInterface.tsx";
 import {SettingsPage} from "../features/settings/components/SettingsPage.tsx";
 import { ROUTES } from "../shared/utils";
-import {ModelProviderPage} from "../features/settings";
+import {ModelProviderPage, EmailIntegrationPage} from "../features/settings";
 import { HomeLanding } from '../features/home/components/HomeLanding.tsx';
 import { settingsStore, SettingsStoreContext } from '../features/settings/stores/settingsStore.ts';
 
@@ -39,6 +39,7 @@ const AppRouter = () => {
                     <Route path={ROUTES.SETTINGS} element={<SettingsPage/>}/>
                     <Route path={ROUTES.SETTINGS_GENERAL} element={<SettingsPage/>}/>
                     <Route path={ROUTES.SETTINGS_MODELS} element={<ModelProviderPage/>}/>
+                    <Route path={ROUTES.SETTINGS_EMAIL_INTEGRATIONS} element={<EmailIntegrationPage/>}/>
                 </Route>
             </Routes>
         </HashRouter>
