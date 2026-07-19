@@ -26,5 +26,14 @@ export class ModelProviderApi {
   static async saveProviders(payload: SaveProvidersPayload): Promise<SavedProvidersResponse> {
     return apiClient.post<SavedProvidersResponse>('/api/settings/providers', payload);
   }
+
+  /**
+   * List models installed on the local (or configured remote) Ollama server
+   */
+  static async getOllamaLocalModels(baseUrl?: string): Promise<{ models: string[] }> {
+    return apiClient.get<{ models: string[] }>('/api/settings/providers/ollama/models', {
+      params: baseUrl ? { base_url: baseUrl } : undefined,
+    });
+  }
 }
 

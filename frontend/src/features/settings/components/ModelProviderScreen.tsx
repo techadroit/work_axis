@@ -575,6 +575,16 @@ export const ModelProviderScreen = () => {
         modelListUrl={selectedProviderData.modelListUrl}
         onClose={handleCloseAddModelDialog}
         onAddModel={handleAddModel}
+        onFetchModels={
+          selectedProviderData.name.toLowerCase() === 'ollama'
+            ? async () => {
+                const baseUrl =
+                  fieldValues[`${selectedProviderData.name}-base_url`] || 'http://localhost:11434';
+                const response = await ModelProviderApi.getOllamaLocalModels(baseUrl);
+                return response.models;
+              }
+            : undefined
+        }
       />
     </>
   );
