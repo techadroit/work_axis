@@ -168,12 +168,14 @@ const NavigationDrawer = ({ isOpen, onToggle, onClose }: NavigationDrawerProps) 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, 
               cursor: 'pointer', }} onClick={handleHomeClick}>
           <Box
-            
+            component="img"
+            src="/icon.png"
+            alt="Personal AI"
             sx={{
               width: 38,
               height: 38,
               borderRadius: '12px',
-              background: `linear-gradient(135deg, ${tokens.accent.primary}, ${tokens.accent.primaryHover})`,
+              objectFit: 'cover',
               flexShrink: 0,
             }}
           />
