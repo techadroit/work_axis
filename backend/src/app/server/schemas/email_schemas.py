@@ -12,6 +12,15 @@ class EmailProviderCredentialsCreate(BaseModel):
     redirect_uri: str = Field(..., description="Exact redirect URI registered with the provider")
 
 
+class EmailProviderStatus(BaseModel):
+    """Whether `provider` can be connected right now, and whether that's via
+    the app's bundled default OAuth client or a self-hosted custom one -
+    lets the frontend decide whether to show the manual Client ID/Secret form."""
+    provider: str
+    available: bool
+    source: str  # "bundled" | "custom" | "none"
+
+
 class EmailProviderCredentials(BaseModel):
     """Schema for returning provider credential configuration status (never includes the secret)"""
     id: str

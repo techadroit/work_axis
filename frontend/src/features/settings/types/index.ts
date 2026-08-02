@@ -11,6 +11,7 @@ export type {
 export type {
   EmailProviderCredentialsCreate,
   EmailProviderCredentials,
+  EmailProviderStatus,
   EmailAccount,
   EmailAccountResponse,
   EmailSyncStatusResponse,

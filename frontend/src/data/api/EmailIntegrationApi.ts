@@ -4,6 +4,7 @@ import type {
   EmailAccountResponse,
   EmailProviderCredentials,
   EmailProviderCredentialsCreate,
+  EmailProviderStatus,
   EmailSyncStatusResponse,
   OAuthUrlResponse,
 } from '../../features/settings/types';
@@ -15,6 +16,10 @@ export class EmailIntegrationApi {
 
   static async getProviderCredentials(provider: string): Promise<EmailProviderCredentials> {
     return apiClient.get<EmailProviderCredentials>(`/api/email/provider-credentials/${provider}`);
+  }
+
+  static async getProviderStatus(provider: string): Promise<EmailProviderStatus> {
+    return apiClient.get<EmailProviderStatus>(`/api/email/provider-status/${provider}`);
   }
 
   static async getOAuthUrl(userId: string, provider: string = 'gmail'): Promise<OAuthUrlResponse> {

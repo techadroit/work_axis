@@ -10,6 +10,7 @@ from typing import List
 from src.app.server.schemas.email_schemas import (
     EmailProviderCredentials,
     EmailProviderCredentialsCreate,
+    EmailProviderStatus,
     EmailAccount,
     EmailAccountResponse,
     EmailSyncStatusResponse,
@@ -49,6 +50,18 @@ def get_provider_credentials(provider: str):
         raise
     except Exception as e:
         log_error(f"Error getting email provider credentials: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@email_routes.get("/provider-status/{provider}", response_model=EmailProviderStatus)
+def get_provider_status(provider: str):
+    """Tells the frontend whether `provider` is ready to connect right now
+    (via the app's bundled default OAuth client or a self-hosted custom one),
+    so it knows whether the manual Client ID/Secret form needs to be shown."""
+    try:
+        return email_service.get_provider_status(provider)
+    except Exception as e:
+        log_error(f"Error getting email provider status: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 

@@ -5,6 +5,7 @@ refresh. Ingestion (Phase 3), manual sync execution (Phase 4), and file
 import (Phase 5) build on top of this in the same file.
 """
 import asyncio
+import os
 import threading
 import time
 from pathlib import Path
@@ -35,6 +36,7 @@ from src.app.server.schemas.email_schemas import (
     EmailProviderCredentialsCreate,
     EmailAccount,
 )
+from src.app.utils.env_util import load_environment
 from src.app.utils.logger_util import log_error, log_info
 
 # Short-lived, in-memory correlation of an OAuth "state" token back to the
@@ -61,6 +63,31 @@ def _store_oauth_state(state: str, payload: dict) -> None:
 def _pop_oauth_state(state: str) -> Optional[dict]:
     with _PENDING_OAUTH_STATES_LOCK:
         return _PENDING_OAUTH_STATES.pop(state, None)
+
+
+# App-bundled OAuth client (Google "Desktop app" type) so end users can
+# "Connect Gmail" without ever setting up their own Google Cloud project - see
+# backend/environment/.env.gmail.example for how this is provisioned. Only
+# used as a fallback: a provider row saved via save_provider_credentials()
+# (a self-hoster's own Google Cloud project) always wins over this, checked
+# by get_effective_provider_credentials() below.
+_BUNDLED_ENV_LOADED = {"gmail": False}
+
+
+def _get_bundled_provider_credentials(provider: str) -> Optional[dict]:
+    if provider not in _BUNDLED_ENV_LOADED:
+        return None
+    if not _BUNDLED_ENV_LOADED[provider]:
+        load_environment(f"environment/.env.{provider}")
+        _BUNDLED_ENV_LOADED[provider] = True
+
+    prefix = provider.upper()
+    client_id = os.environ.get(f"{prefix}_DEFAULT_CLIENT_ID")
+    client_secret = os.environ.get(f"{prefix}_DEFAULT_CLIENT_SECRET")
+    redirect_uri = os.environ.get(f"{prefix}_DEFAULT_REDIRECT_URI")
+    if not client_id or not client_secret or not redirect_uri:
+        return None
+    return {"client_id": client_id, "client_secret": client_secret, "redirect_uri": redirect_uri}
 
 
 def build_email_ingestion_pipeline():
@@ -164,6 +191,36 @@ class EmailService:
             log_error(f"Service error getting email provider credentials: {e}")
             raise
 
+    def get_effective_provider_credentials(self, provider: str) -> Optional[dict]:
+        """{client_id, client_secret, redirect_uri} to actually use for this
+        provider's OAuth flow. A custom Client ID/Secret saved via
+        save_provider_credentials() (a self-hoster's own Google Cloud
+        project) always wins; otherwise falls back to the app's bundled
+        default client so Gmail works with zero per-user setup."""
+        try:
+            creds = self.credential_repository.get_decrypted_secret(provider)
+            if creds:
+                return creds
+            return _get_bundled_provider_credentials(provider)
+        except Exception as e:
+            log_error(f"Service error resolving effective email provider credentials: {e}")
+            raise
+
+    def get_provider_status(self, provider: str) -> dict:
+        """Tells the frontend whether `provider` can be connected right now,
+        and whether that's via the app's bundled default client or a
+        self-hosted custom one - determines whether to show the manual
+        Client ID/Secret entry form at all."""
+        try:
+            if self.credential_repository.get_decrypted_secret(provider):
+                return {"provider": provider, "available": True, "source": "custom"}
+            if _get_bundled_provider_credentials(provider):
+                return {"provider": provider, "available": True, "source": "bundled"}
+            return {"provider": provider, "available": False, "source": "none"}
+        except Exception as e:
+            log_error(f"Service error getting email provider status: {e}")
+            raise
+
     def get_accounts_for_user(self, user_id: str) -> List[EmailAccount]:
         try:
             return self.account_repository.get_all_by_user(user_id)
@@ -207,13 +264,14 @@ class EmailService:
     # ---------------------------------------------------------------
 
     def build_authorization_url(self, provider: str, user_id: str) -> dict:
-        """Builds the Google consent URL. Raises ValueError if the provider's
-        Client ID/Secret haven't been configured yet."""
-        creds = self.credential_repository.get_decrypted_secret(provider)
+        """Builds the Google consent URL. Raises ValueError if neither a
+        custom nor a bundled default Client ID/Secret is available."""
+        creds = self.get_effective_provider_credentials(provider)
         if not creds:
             raise ValueError(
                 f"No OAuth Client ID/Secret configured for provider '{provider}'. "
-                f"Save them via POST /api/email/provider-credentials first."
+                f"This app has no bundled default for it either - save your own via "
+                f"POST /api/email/provider-credentials."
             )
 
         auth_url, state = gmail_build_authorization_url(
@@ -237,7 +295,7 @@ class EmailService:
         provider = pending["provider"]
         user_id = pending["user_id"]
 
-        creds = self.credential_repository.get_decrypted_secret(provider)
+        creds = self.get_effective_provider_credentials(provider)
         if not creds:
             raise ValueError(f"OAuth Client ID/Secret for provider '{provider}' are no longer configured.")
 
@@ -274,7 +332,7 @@ class EmailService:
         if not account:
             raise ValueError(f"Email account not found: {account_id}")
 
-        creds = self.credential_repository.get_decrypted_secret(account.provider)
+        creds = self.get_effective_provider_credentials(account.provider)
         if not creds:
             raise ValueError(f"OAuth Client ID/Secret for provider '{account.provider}' are no longer configured.")
 

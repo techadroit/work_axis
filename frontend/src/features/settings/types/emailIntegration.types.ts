@@ -14,6 +14,12 @@ export interface EmailProviderCredentials {
   updated_at: string;
 }
 
+export interface EmailProviderStatus {
+  provider: string;
+  available: boolean;
+  source: 'bundled' | 'custom' | 'none';
+}
+
 export interface EmailAccount {
   id: string;
   user_id: string;

@@ -6,6 +6,7 @@ import {
   Button,
   Chip,
   CircularProgress,
+  Collapse,
   Divider,
   IconButton,
   Snackbar,
@@ -19,6 +20,7 @@ import {
   Sync as SyncIcon,
   LinkOff as LinkOffIcon,
   UploadFile as UploadFileIcon,
+  ExpandMore as ExpandMoreIcon,
 } from '@mui/icons-material';
 import { UiIconButton, UiSectionTitle, UiEmptyState } from '../../../shared/components/ui';
 import { useUserSelector } from '../../../shared/stores/userStore';
@@ -27,7 +29,7 @@ import { EmailIntegrationApi } from '../../../data/api/EmailIntegrationApi';
 import { useSettingsDispatch } from '../stores/settingsStore';
 import { loadEmailAccounts } from '../stores/emailIntegrationSlice';
 import { useLoadEmailAccounts } from '../hooks/useLoadEmailAccounts';
-import type { EmailAccount } from '../types';
+import type { EmailAccount, EmailProviderStatus } from '../types';
 import { logger } from '../../../core/logger';
 
 const GMAIL_PROVIDER = 'gmail';
@@ -64,6 +66,9 @@ export const EmailIntegrationScreen = () => {
   const [clientSecret, setClientSecret] = useState('');
   const [isSavingCredentials, setIsSavingCredentials] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [providerStatus, setProviderStatus] = useState<EmailProviderStatus | null>(null);
+  const [loadingProviderStatus, setLoadingProviderStatus] = useState(true);
+  const [showAdvancedSetup, setShowAdvancedSetup] = useState(false);
   const [syncingAccountIds, setSyncingAccountIds] = useState<Set<string>>(new Set());
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
@@ -80,6 +85,30 @@ export const EmailIntegrationScreen = () => {
   const refreshAccounts = useCallback(() => {
     if (userId) dispatch(loadEmailAccounts(userId));
   }, [dispatch, userId]);
+
+  const refreshProviderStatus = useCallback(async () => {
+    setLoadingProviderStatus(true);
+    try {
+      const status = await EmailIntegrationApi.getProviderStatus(GMAIL_PROVIDER);
+      setProviderStatus(status);
+      // Only auto-open the manual entry form when there's truly no way to
+      // connect yet (no bundled default, nothing saved) - otherwise it stays
+      // tucked away under "Advanced" since most users never need it.
+      if (!status.available) setShowAdvancedSetup(true);
+    } catch (error) {
+      logger.error('Failed to load email provider status', error);
+      // Fail open to the manual form rather than silently blocking "Connect
+      // Gmail" behind a status check that itself failed.
+      setProviderStatus({ provider: GMAIL_PROVIDER, available: false, source: 'none' });
+      setShowAdvancedSetup(true);
+    } finally {
+      setLoadingProviderStatus(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshProviderStatus();
+  }, [refreshProviderStatus]);
 
   // Poll sync status for any account currently running, until it settles.
   useEffect(() => {
@@ -122,6 +151,7 @@ export const EmailIntegrationScreen = () => {
       });
       showSnackbar('Google OAuth credentials saved');
       setClientSecret('');
+      refreshProviderStatus();
     } catch (error) {
       logger.error('Failed to save email provider credentials', error);
       showSnackbar('Failed to save credentials', 'error');
@@ -139,7 +169,10 @@ export const EmailIntegrationScreen = () => {
       showSnackbar('Complete the Google sign-in in your browser, then return here.');
     } catch (error) {
       logger.error('Failed to start Gmail OAuth flow', error);
-      showSnackbar('Failed to start Gmail connection - configure Client ID/Secret first', 'error');
+      showSnackbar(
+        providerStatus?.available ? 'Failed to start Gmail connection' : 'Configure a Google OAuth Client ID/Secret first',
+        'error'
+      );
     } finally {
       setIsConnecting(false);
     }
@@ -244,50 +277,44 @@ export const EmailIntegrationScreen = () => {
           Connect Gmail or import email files so chat can answer questions grounded in your inbox.
         </Typography>
 
-        {/* Google Cloud OAuth setup */}
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-            1. Google OAuth Setup (one time)
-          </Typography>
-          <Alert severity="info" sx={{ mb: 2 }}>
-            In Google Cloud Console: enable the Gmail API, set the OAuth consent screen to &quot;Testing&quot; with your
-            own account as a test user, then create an OAuth Client ID of type &quot;Desktop app&quot;. Paste its
-            Client ID and Client Secret below, and register the redirect URI shown below exactly as-is.
-          </Alert>
-
-          <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Redirect URI (register this exactly in Google Cloud)</Typography>
-          <TextField
-            fullWidth
-            value={REDIRECT_URI}
-            slotProps={{ input: { readOnly: true, endAdornment: (
-              <IconButton onClick={copyRedirectUri} edge="end" size="small">
-                <ContentCopy fontSize="small" />
-              </IconButton>
-            ) } }}
-            sx={{ mb: 2 }}
-          />
-
-          <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Client ID</Typography>
-          <TextField fullWidth value={clientId} onChange={(e) => setClientId(e.target.value)} sx={{ mb: 2 }} placeholder="xxxxx.apps.googleusercontent.com" />
-
-          <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Client Secret</Typography>
-          <TextField fullWidth type="password" value={clientSecret} onChange={(e) => setClientSecret(e.target.value)} sx={{ mb: 2 }} />
-
-          <Button variant="outlined" onClick={handleSaveCredentials} disabled={isSavingCredentials}>
-            {isSavingCredentials ? <CircularProgress size={18} /> : 'Save Credentials'}
-          </Button>
-        </Box>
-
-        <Divider sx={{ mb: 4 }} />
-
         {/* Connect + account list */}
         <Box sx={{ mb: 4 }}>
           <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-            2. Connect Gmail
+            Connect Gmail
           </Typography>
-          <Button variant="contained" startIcon={<MailIcon />} onClick={handleConnectGmail} disabled={isConnecting} sx={{ mb: 2 }}>
-            {isConnecting ? <CircularProgress size={18} sx={{ color: 'inherit' }} /> : 'Connect Gmail'}
-          </Button>
+
+          {loadingProviderStatus ? (
+            <CircularProgress size={20} sx={{ mb: 2 }} />
+          ) : (
+            <>
+              {providerStatus?.source === 'bundled' && (
+                <Alert severity="success" sx={{ mb: 2 }}>
+                  Ready to connect - no setup needed. Sign in with your Google account and grant read access to Gmail.
+                </Alert>
+              )}
+              {providerStatus?.source === 'custom' && (
+                <Alert severity="info" sx={{ mb: 2 }}>
+                  Using your own Google Cloud OAuth client (configured below under &quot;Advanced&quot;).
+                </Alert>
+              )}
+              {providerStatus?.source === 'none' && (
+                <Alert severity="warning" sx={{ mb: 2 }}>
+                  This app has no built-in Google connection configured. Set up your own Google Cloud OAuth client
+                  under &quot;Advanced&quot; below to enable Gmail.
+                </Alert>
+              )}
+
+              <Button
+                variant="contained"
+                startIcon={<MailIcon />}
+                onClick={handleConnectGmail}
+                disabled={isConnecting || !providerStatus?.available}
+                sx={{ mb: 2 }}
+              >
+                {isConnecting ? <CircularProgress size={18} sx={{ color: 'inherit' }} /> : 'Connect Gmail'}
+              </Button>
+            </>
+          )}
 
           {loading && accounts.length === 0 ? (
             <CircularProgress size={24} />
@@ -340,6 +367,58 @@ export const EmailIntegrationScreen = () => {
               })}
             </Box>
           )}
+
+          {/* Advanced: use a self-hosted Google Cloud OAuth client instead of
+              this app's bundled default - only needed to raise the 100-test-user
+              cap on your own Google Cloud project, or to keep the OAuth client
+              under your own control. */}
+          <Box sx={{ mt: 3 }}>
+            <Button
+              size="small"
+              onClick={() => setShowAdvancedSetup((prev) => !prev)}
+              endIcon={
+                <ExpandMoreIcon
+                  fontSize="small"
+                  sx={{ transform: showAdvancedSetup ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}
+                />
+              }
+              sx={{ textTransform: 'none', color: 'text.secondary' }}
+            >
+              Advanced: use your own Google Cloud project
+            </Button>
+            <Collapse in={showAdvancedSetup}>
+              <Box sx={{ mt: 2, p: 2, border: '1px solid var(--border-subtle)', borderRadius: 2 }}>
+                <Alert severity="info" sx={{ mb: 2 }}>
+                  In Google Cloud Console: enable the Gmail API, set the OAuth consent screen to &quot;Testing&quot; with your
+                  own account as a test user, then create an OAuth Client ID of type &quot;Desktop app&quot;. Paste its
+                  Client ID and Client Secret below, and register the redirect URI shown below exactly as-is. This
+                  overrides the app's built-in Google connection for every user of this install.
+                </Alert>
+
+                <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Redirect URI (register this exactly in Google Cloud)</Typography>
+                <TextField
+                  fullWidth
+                  value={REDIRECT_URI}
+                  slotProps={{ input: { readOnly: true, endAdornment: (
+                    <IconButton onClick={copyRedirectUri} edge="end" size="small">
+                      <ContentCopy fontSize="small" />
+                    </IconButton>
+                  ) } }}
+                  sx={{ mb: 2 }}
+                />
+
+                <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Client ID</Typography>
+                <TextField fullWidth value={clientId} onChange={(e) => setClientId(e.target.value)} sx={{ mb: 2 }} placeholder="xxxxx.apps.googleusercontent.com" />
+
+                <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Client Secret</Typography>
+                <TextField fullWidth type="password" value={clientSecret} onChange={(e) => setClientSecret(e.target.value)} sx={{ mb: 2 }} />
+
+                <Button variant="outlined" onClick={handleSaveCredentials} disabled={isSavingCredentials}>
+                  {isSavingCredentials ? <CircularProgress size={18} /> : 'Save Credentials'}
+                </Button>
+              </Box>
+            </Collapse>
+          </Box>
         </Box>
 
         <Divider sx={{ mb: 4 }} />
