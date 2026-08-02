@@ -7,7 +7,6 @@ import {
   Chip,
   CircularProgress,
   Collapse,
-  Divider,
   IconButton,
   Snackbar,
   TextField,
@@ -66,6 +65,7 @@ export const EmailIntegrationScreen = () => {
   const [clientSecret, setClientSecret] = useState('');
   const [isSavingCredentials, setIsSavingCredentials] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [awaitingAuthorization, setAwaitingAuthorization] = useState(false);
   const [providerStatus, setProviderStatus] = useState<EmailProviderStatus | null>(null);
   const [loadingProviderStatus, setLoadingProviderStatus] = useState(true);
   const [showAdvancedSetup, setShowAdvancedSetup] = useState(false);
@@ -77,6 +77,10 @@ export const EmailIntegrationScreen = () => {
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isImporting, setIsImporting] = useState(false);
+  const preAuthGmailCountRef = useRef(0);
+
+  const gmailAccounts = accounts.filter((a) => a.provider === GMAIL_PROVIDER);
+  const fileImportAccounts = accounts.filter((a) => a.provider === 'file_import');
 
   const showSnackbar = useCallback((message: string, severity: 'success' | 'error' = 'success') => {
     setSnackbar({ open: true, message, severity });
@@ -136,6 +140,30 @@ export const EmailIntegrationScreen = () => {
     return () => clearInterval(interval);
   }, [accounts, refreshAccounts]);
 
+  // While waiting for the user to finish the Google consent screen in their
+  // browser, poll the account list so "Connected" appears on its own - the
+  // same "click Connect, it just updates when you're done" feel as Claude's
+  // own connector list, instead of making the user come back and hit refresh.
+  useEffect(() => {
+    if (!awaitingAuthorization) return;
+    const startedAt = Date.now();
+    const interval = setInterval(() => {
+      refreshAccounts();
+      if (Date.now() - startedAt > 90_000) {
+        setAwaitingAuthorization(false);
+      }
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [awaitingAuthorization, refreshAccounts]);
+
+  useEffect(() => {
+    if (!awaitingAuthorization) return;
+    if (gmailAccounts.length > preAuthGmailCountRef.current) {
+      setAwaitingAuthorization(false);
+      showSnackbar('Gmail connected');
+    }
+  }, [awaitingAuthorization, gmailAccounts.length, showSnackbar]);
+
   const handleSaveCredentials = async () => {
     if (!clientId.trim() || !clientSecret.trim()) {
       showSnackbar('Client ID and Client Secret are required', 'error');
@@ -165,8 +193,10 @@ export const EmailIntegrationScreen = () => {
     setIsConnecting(true);
     try {
       const { auth_url } = await EmailIntegrationApi.getOAuthUrl(userId, GMAIL_PROVIDER);
+      preAuthGmailCountRef.current = gmailAccounts.length;
       openExternal(auth_url);
-      showSnackbar('Complete the Google sign-in in your browser, then return here.');
+      setAwaitingAuthorization(true);
+      showSnackbar('Complete the Google sign-in in your browser - this updates automatically.');
     } catch (error) {
       logger.error('Failed to start Gmail OAuth flow', error);
       showSnackbar(
@@ -229,6 +259,49 @@ export const EmailIntegrationScreen = () => {
     showSnackbar('Redirect URI copied');
   };
 
+  const renderAccountRow = (account: EmailAccount) => {
+    const isSyncing = account.last_sync_status === 'running' || syncingAccountIds.has(account.id);
+    return (
+      <Box
+        key={account.id}
+        sx={{
+          p: 1.5,
+          border: '1px solid var(--border-subtle)',
+          borderRadius: 2,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1.5,
+          flexWrap: 'wrap',
+        }}
+      >
+        <Box sx={{ flex: 1, minWidth: 200 }}>
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>{account.email_address}</Typography>
+          <Typography variant="caption" color="text.secondary">
+            {account.last_synced_at ? `Last synced ${account.last_synced_at}` : 'Never synced'} &middot;{' '}
+            {account.total_messages_synced} messages
+          </Typography>
+          {account.last_sync_error && (
+            <Typography variant="caption" color="error.main" sx={{ display: 'block' }}>{account.last_sync_error}</Typography>
+          )}
+        </Box>
+        <Chip label={isSyncing ? 'syncing' : account.status} color={isSyncing ? 'default' : statusColor(account.status)} size="small" />
+        {account.provider !== 'file_import' && (
+          <Button
+            size="small"
+            startIcon={isSyncing ? <CircularProgress size={14} /> : <SyncIcon />}
+            onClick={() => handleSyncNow(account)}
+            disabled={isSyncing}
+          >
+            Sync Now
+          </Button>
+        )}
+        <IconButton size="small" onClick={() => handleDisconnect(account)} aria-label="disconnect">
+          <LinkOffIcon fontSize="small" />
+        </IconButton>
+      </Box>
+    );
+  };
+
   return (
     <Box sx={{ width: '100%', height: '100%', overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
       {!isLargeScreen && (
@@ -277,165 +350,201 @@ export const EmailIntegrationScreen = () => {
           Connect Gmail or import email files so chat can answer questions grounded in your inbox.
         </Typography>
 
-        {/* Connect + account list */}
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-            Connect Gmail
-          </Typography>
+        <Typography variant="overline" sx={{ color: 'text.secondary', fontWeight: 700, letterSpacing: '0.06em' }}>
+          Connectors
+        </Typography>
 
-          {loadingProviderStatus ? (
-            <CircularProgress size={20} sx={{ mb: 2 }} />
-          ) : (
-            <>
-              {providerStatus?.source === 'bundled' && (
-                <Alert severity="success" sx={{ mb: 2 }}>
-                  Ready to connect - no setup needed. Sign in with your Google account and grant read access to Gmail.
-                </Alert>
-              )}
-              {providerStatus?.source === 'custom' && (
-                <Alert severity="info" sx={{ mb: 2 }}>
-                  Using your own Google Cloud OAuth client (configured below under &quot;Advanced&quot;).
-                </Alert>
-              )}
-              {providerStatus?.source === 'none' && (
-                <Alert severity="warning" sx={{ mb: 2 }}>
-                  This app has no built-in Google connection configured. Set up your own Google Cloud OAuth client
-                  under &quot;Advanced&quot; below to enable Gmail.
-                </Alert>
-              )}
-
-              <Button
-                variant="contained"
-                startIcon={<MailIcon />}
-                onClick={handleConnectGmail}
-                disabled={isConnecting || !providerStatus?.available}
-                sx={{ mb: 2 }}
-              >
-                {isConnecting ? <CircularProgress size={18} sx={{ color: 'inherit' }} /> : 'Connect Gmail'}
-              </Button>
-            </>
-          )}
-
-          {loading && accounts.length === 0 ? (
-            <CircularProgress size={24} />
-          ) : accounts.length === 0 ? (
-            <UiEmptyState title="No email accounts connected" description="Connect Gmail above or import a file below." />
-          ) : (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-              {accounts.map((account) => {
-                const isSyncing = account.last_sync_status === 'running' || syncingAccountIds.has(account.id);
-                return (
-                  <Box
-                    key={account.id}
-                    sx={{
-                      p: 2,
-                      border: '1px solid var(--border-subtle)',
-                      borderRadius: 2,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1.5,
-                      flexWrap: 'wrap',
-                    }}
-                  >
-                    <Box sx={{ flex: 1, minWidth: 200 }}>
-                      <Typography variant="body1" sx={{ fontWeight: 600 }}>{account.email_address}</Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {account.provider === 'file_import' ? 'Imported file' : account.provider} &middot;{' '}
-                        {account.last_synced_at ? `Last synced ${account.last_synced_at}` : 'Never synced'} &middot;{' '}
-                        {account.total_messages_synced} messages
-                      </Typography>
-                      {account.last_sync_error && (
-                        <Typography variant="body2" color="error.main">{account.last_sync_error}</Typography>
-                      )}
-                    </Box>
-                    <Chip label={isSyncing ? 'syncing' : account.status} color={isSyncing ? 'default' : statusColor(account.status)} size="small" />
-                    {account.provider !== 'file_import' && (
-                      <Button
-                        size="small"
-                        startIcon={isSyncing ? <CircularProgress size={14} /> : <SyncIcon />}
-                        onClick={() => handleSyncNow(account)}
-                        disabled={isSyncing}
-                      >
-                        Sync Now
-                      </Button>
-                    )}
-                    <IconButton size="small" onClick={() => handleDisconnect(account)} aria-label="disconnect">
-                      <LinkOffIcon fontSize="small" />
-                    </IconButton>
-                  </Box>
-                );
-              })}
-            </Box>
-          )}
-
-          {/* Advanced: use a self-hosted Google Cloud OAuth client instead of
-              this app's bundled default - only needed to raise the 100-test-user
-              cap on your own Google Cloud project, or to keep the OAuth client
-              under your own control. */}
-          <Box sx={{ mt: 3 }}>
-            <Button
-              size="small"
-              onClick={() => setShowAdvancedSetup((prev) => !prev)}
-              endIcon={
-                <ExpandMoreIcon
-                  fontSize="small"
-                  sx={{ transform: showAdvancedSetup ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}
-                />
-              }
-              sx={{ textTransform: 'none', color: 'text.secondary' }}
+        {/* Gmail connector card */}
+        <Box
+          sx={{
+            mt: 1,
+            mb: 3,
+            p: 2.5,
+            border: '1px solid var(--border-subtle)',
+            borderRadius: '20px',
+            backgroundColor: 'color-mix(in srgb, var(--surface-primary) 88%, transparent)',
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+            <Box
+              sx={{
+                width: 44,
+                height: 44,
+                borderRadius: '12px',
+                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: 'color-mix(in srgb, #EA4335 14%, transparent)',
+              }}
             >
-              Advanced: use your own Google Cloud project
-            </Button>
-            <Collapse in={showAdvancedSetup}>
-              <Box sx={{ mt: 2, p: 2, border: '1px solid var(--border-subtle)', borderRadius: 2 }}>
-                <Alert severity="info" sx={{ mb: 2 }}>
-                  In Google Cloud Console: enable the Gmail API, set the OAuth consent screen to &quot;Testing&quot; with your
-                  own account as a test user, then create an OAuth Client ID of type &quot;Desktop app&quot;. Paste its
-                  Client ID and Client Secret below, and register the redirect URI shown below exactly as-is. This
-                  overrides the app's built-in Google connection for every user of this install.
-                </Alert>
+              <MailIcon sx={{ color: '#EA4335' }} />
+            </Box>
 
-                <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Redirect URI (register this exactly in Google Cloud)</Typography>
-                <TextField
-                  fullWidth
-                  value={REDIRECT_URI}
-                  slotProps={{ input: { readOnly: true, endAdornment: (
-                    <IconButton onClick={copyRedirectUri} edge="end" size="small">
-                      <ContentCopy fontSize="small" />
-                    </IconButton>
-                  ) } }}
-                  sx={{ mb: 2 }}
-                />
-
-                <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Client ID</Typography>
-                <TextField fullWidth value={clientId} onChange={(e) => setClientId(e.target.value)} sx={{ mb: 2 }} placeholder="xxxxx.apps.googleusercontent.com" />
-
-                <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Client Secret</Typography>
-                <TextField fullWidth type="password" value={clientSecret} onChange={(e) => setClientSecret(e.target.value)} sx={{ mb: 2 }} />
-
-                <Button variant="outlined" onClick={handleSaveCredentials} disabled={isSavingCredentials}>
-                  {isSavingCredentials ? <CircularProgress size={18} /> : 'Save Credentials'}
-                </Button>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>Gmail</Typography>
+                {awaitingAuthorization ? (
+                  <Chip label="Connecting…" size="small" color="info" />
+                ) : gmailAccounts.length === 0 ? (
+                  <Chip label="Not connected" size="small" variant="outlined" />
+                ) : null}
               </Box>
-            </Collapse>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
+                Search your inbox from chat - read-only access, disconnect anytime.
+              </Typography>
+
+              {loadingProviderStatus || loading ? (
+                <CircularProgress size={18} sx={{ mt: 1.5 }} />
+              ) : (
+                <>
+                  {providerStatus?.source === 'none' && (
+                    <Alert severity="warning" sx={{ mt: 1.5, mb: 1 }}>
+                      No Google connection is configured for this app yet. Use &quot;Advanced&quot; below to add your
+                      own Google Cloud OAuth client.
+                    </Alert>
+                  )}
+
+                  <Box sx={{ mt: 1.5, display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      startIcon={isConnecting || awaitingAuthorization ? undefined : <MailIcon />}
+                      onClick={handleConnectGmail}
+                      disabled={isConnecting || awaitingAuthorization || !providerStatus?.available}
+                    >
+                      {isConnecting || awaitingAuthorization ? (
+                        <CircularProgress size={16} sx={{ color: 'inherit' }} />
+                      ) : gmailAccounts.length > 0 ? (
+                        'Connect another account'
+                      ) : (
+                        'Connect'
+                      )}
+                    </Button>
+                    {providerStatus?.source === 'custom' && (
+                      <Typography variant="caption" color="text.secondary">Using your own Google Cloud OAuth client</Typography>
+                    )}
+                  </Box>
+                </>
+              )}
+
+              {gmailAccounts.length > 0 && (
+                <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                  {gmailAccounts.map(renderAccountRow)}
+                </Box>
+              )}
+
+              {/* Advanced: use a self-hosted Google Cloud OAuth client instead
+                  of this app's bundled default - only needed to raise the
+                  100-test-user cap on your own Google Cloud project, or to
+                  keep the OAuth client under your own control. */}
+              <Box sx={{ mt: 2 }}>
+                <Button
+                  size="small"
+                  onClick={() => setShowAdvancedSetup((prev) => !prev)}
+                  endIcon={
+                    <ExpandMoreIcon
+                      fontSize="small"
+                      sx={{ transform: showAdvancedSetup ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}
+                    />
+                  }
+                  sx={{ textTransform: 'none', color: 'text.secondary', pl: 0 }}
+                >
+                  Advanced: use your own Google Cloud project
+                </Button>
+                <Collapse in={showAdvancedSetup}>
+                  <Box sx={{ mt: 1, p: 2, border: '1px solid var(--border-subtle)', borderRadius: 2 }}>
+                    <Alert severity="info" sx={{ mb: 2 }}>
+                      In Google Cloud Console: enable the Gmail API, set the OAuth consent screen to &quot;Testing&quot; with your
+                      own account as a test user, then create an OAuth Client ID of type &quot;Desktop app&quot;. Paste its
+                      Client ID and Client Secret below, and register the redirect URI shown below exactly as-is. This
+                      overrides the app's built-in Google connection for every user of this install.
+                    </Alert>
+
+                    <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Redirect URI (register this exactly in Google Cloud)</Typography>
+                    <TextField
+                      fullWidth
+                      value={REDIRECT_URI}
+                      slotProps={{ input: { readOnly: true, endAdornment: (
+                        <IconButton onClick={copyRedirectUri} edge="end" size="small">
+                          <ContentCopy fontSize="small" />
+                        </IconButton>
+                      ) } }}
+                      sx={{ mb: 2 }}
+                    />
+
+                    <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Client ID</Typography>
+                    <TextField fullWidth value={clientId} onChange={(e) => setClientId(e.target.value)} sx={{ mb: 2 }} placeholder="xxxxx.apps.googleusercontent.com" />
+
+                    <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Client Secret</Typography>
+                    <TextField fullWidth type="password" value={clientSecret} onChange={(e) => setClientSecret(e.target.value)} sx={{ mb: 2 }} />
+
+                    <Button variant="outlined" onClick={handleSaveCredentials} disabled={isSavingCredentials}>
+                      {isSavingCredentials ? <CircularProgress size={18} /> : 'Save Credentials'}
+                    </Button>
+                  </Box>
+                </Collapse>
+              </Box>
+            </Box>
           </Box>
         </Box>
 
-        <Divider sx={{ mb: 4 }} />
+        {/* File import connector card */}
+        <Box
+          sx={{
+            p: 2.5,
+            border: '1px solid var(--border-subtle)',
+            borderRadius: '20px',
+            backgroundColor: 'color-mix(in srgb, var(--surface-primary) 88%, transparent)',
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+            <Box
+              sx={{
+                width: 44,
+                height: 44,
+                borderRadius: '12px',
+                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: 'color-mix(in srgb, var(--accent-primary) 14%, transparent)',
+              }}
+            >
+              <UploadFileIcon color="primary" />
+            </Box>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>Import from file</Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25, mb: 1.5 }}>
+                No Google account needed - upload a .mbox export (e.g. from Google Takeout) or a single .eml file.
+              </Typography>
+              <input ref={fileInputRef} type="file" accept=".mbox,.eml" style={{ display: 'none' }} onChange={handleImportFile} />
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={isImporting ? undefined : <UploadFileIcon />}
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isImporting}
+              >
+                {isImporting ? <CircularProgress size={16} sx={{ color: 'inherit' }} /> : 'Import from file'}
+              </Button>
 
-        {/* File import */}
-        <Box>
-          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-            Or import from a file
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-            No Google account needed - upload a .mbox export (e.g. from Google Takeout) or a single .eml file.
-          </Typography>
-          <input ref={fileInputRef} type="file" accept=".mbox,.eml" style={{ display: 'none' }} onChange={handleImportFile} />
-          <Button variant="outlined" startIcon={isImporting ? <CircularProgress size={16} /> : <UploadFileIcon />} onClick={() => fileInputRef.current?.click()} disabled={isImporting}>
-            Import from file
-          </Button>
+              {fileImportAccounts.length > 0 && (
+                <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                  {fileImportAccounts.map(renderAccountRow)}
+                </Box>
+              )}
+            </Box>
+          </Box>
         </Box>
+
+        {accounts.length === 0 && !loading && (
+          <UiEmptyState
+            sx={{ mt: 3 }}
+            title="No email accounts connected"
+            description="Connect Gmail or import a file above to get started."
+          />
+        )}
       </Box>
 
       <Snackbar
