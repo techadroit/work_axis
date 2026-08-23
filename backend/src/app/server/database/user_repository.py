@@ -2,7 +2,10 @@
 from typing import Optional, List
 import uuid
 
-from src.app.server.database.db_session import get_db_connection
+from sqlalchemy import select, func
+
+from src.app.server.database.db_session import get_db_session
+from src.app.server.database.orm_models import UserORM, ChatSessionORM, ChatMessageORM
 from src.app.server.database.user_models import (
     User, UserCreate, UserUpdate
 )
@@ -27,25 +30,18 @@ class UserRepository:
             Exception: If user creation fails
         """
         try:
-            conn = get_db_connection()
-
             user_id = user_create.user_id if user_create.user_id else str(uuid.uuid4())
 
-            conn.execute("""
-                INSERT INTO users (
-                    user_id, username, email, password_hash, full_name,
-                    created_at, updated_at, is_active, last_login
+            with get_db_session() as session:
+                user = UserORM(
+                    user_id=user_id,
+                    username=user_create.username,
+                    email=user_create.email,
+                    password_hash=user_create.password_hash,
+                    full_name=user_create.full_name,
                 )
-                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, TRUE, NULL)
-            """, [
-                user_id,
-                user_create.username,
-                user_create.email,
-                user_create.password_hash,
-                user_create.full_name
-            ])
+                session.add(user)
 
-            conn.close()
             log_info(f"Created new user: {user_id} with username: {user_create.username}")
             return user_id
 
@@ -65,30 +61,9 @@ class UserRepository:
             User model or None if not found
         """
         try:
-            conn = get_db_connection()
-
-            result = conn.execute("""
-                SELECT user_id, username, email, password_hash, full_name,
-                       created_at, updated_at, is_active, last_login
-                FROM users
-                WHERE user_id = ?
-            """, [user_id]).fetchone()
-
-            conn.close()
-
-            if result:
-                return User(
-                    user_id=result[0],
-                    username=result[1],
-                    email=result[2],
-                    password_hash=result[3],
-                    full_name=result[4],
-                    created_at=result[5],
-                    updated_at=result[6],
-                    is_active=result[7],
-                    last_login=result[8]
-                )
-            return None
+            with get_db_session() as session:
+                user = session.get(UserORM, user_id)
+                return User.model_validate(user) if user else None
 
         except Exception as e:
             log_error(f"Error getting user by ID {user_id}: {e}")
@@ -106,30 +81,11 @@ class UserRepository:
             User model or None if not found
         """
         try:
-            conn = get_db_connection()
-
-            result = conn.execute("""
-                SELECT user_id, username, email, password_hash, full_name,
-                       created_at, updated_at, is_active, last_login
-                FROM users
-                WHERE username = ?
-            """, [username]).fetchone()
-
-            conn.close()
-
-            if result:
-                return User(
-                    user_id=result[0],
-                    username=result[1],
-                    email=result[2],
-                    password_hash=result[3],
-                    full_name=result[4],
-                    created_at=result[5],
-                    updated_at=result[6],
-                    is_active=result[7],
-                    last_login=result[8]
-                )
-            return None
+            with get_db_session() as session:
+                user = session.execute(
+                    select(UserORM).where(UserORM.username == username)
+                ).scalar_one_or_none()
+                return User.model_validate(user) if user else None
 
         except Exception as e:
             log_error(f"Error getting user by username {username}: {e}")
@@ -147,30 +103,11 @@ class UserRepository:
             User model or None if not found
         """
         try:
-            conn = get_db_connection()
-
-            result = conn.execute("""
-                SELECT user_id, username, email, password_hash, full_name,
-                       created_at, updated_at, is_active, last_login
-                FROM users
-                WHERE email = ?
-            """, [email]).fetchone()
-
-            conn.close()
-
-            if result:
-                return User(
-                    user_id=result[0],
-                    username=result[1],
-                    email=result[2],
-                    password_hash=result[3],
-                    full_name=result[4],
-                    created_at=result[5],
-                    updated_at=result[6],
-                    is_active=result[7],
-                    last_login=result[8]
-                )
-            return None
+            with get_db_session() as session:
+                user = session.execute(
+                    select(UserORM).where(UserORM.email == email)
+                ).scalar_one_or_none()
+                return User.model_validate(user) if user else None
 
         except Exception as e:
             log_error(f"Error getting user by email {email}: {e}")
@@ -188,40 +125,14 @@ class UserRepository:
             List of User models
         """
         try:
-            conn = get_db_connection()
+            with get_db_session() as session:
+                query = select(UserORM)
+                if not include_inactive:
+                    query = query.where(UserORM.is_active.is_(True))
+                query = query.order_by(UserORM.created_at.desc())
 
-            if include_inactive:
-                query = """
-                    SELECT user_id, username, email, password_hash, full_name,
-                           created_at, updated_at, is_active, last_login
-                    FROM users
-                    ORDER BY created_at DESC
-                """
-            else:
-                query = """
-                    SELECT user_id, username, email, password_hash, full_name,
-                           created_at, updated_at, is_active, last_login
-                    FROM users
-                    WHERE is_active = TRUE
-                    ORDER BY created_at DESC
-                """
-
-            results = conn.execute(query).fetchall()
-            conn.close()
-
-            users = []
-            for row in results:
-                users.append(User(
-                    user_id=row[0],
-                    username=row[1],
-                    email=row[2],
-                    password_hash=row[3],
-                    full_name=row[4],
-                    created_at=row[5],
-                    updated_at=row[6],
-                    is_active=row[7],
-                    last_login=row[8]
-                ))
+                results = session.execute(query).scalars().all()
+                users = [User.model_validate(row) for row in results]
 
             log_debug(f"Retrieved {len(users)} users")
             return users
@@ -243,47 +154,21 @@ class UserRepository:
             True if successful, False otherwise
         """
         try:
-            conn = get_db_connection()
+            with get_db_session() as session:
+                user = session.get(UserORM, user_id)
+                if user is None:
+                    log_debug(f"User {user_id} not found for update")
+                    return False
 
-            # Build dynamic update query based on what fields are provided
-            update_fields = []
-            values = []
+                update_data = user_update.model_dump(exclude_unset=True, exclude_none=True)
+                if not update_data:
+                    log_debug(f"No fields to update for user {user_id}")
+                    return True
 
-            if user_update.username is not None:
-                update_fields.append("username = ?")
-                values.append(user_update.username)
+                for field, value in update_data.items():
+                    setattr(user, field, value)
+                user.updated_at = func.current_timestamp()
 
-            if user_update.email is not None:
-                update_fields.append("email = ?")
-                values.append(user_update.email)
-
-            if user_update.password_hash is not None:
-                update_fields.append("password_hash = ?")
-                values.append(user_update.password_hash)
-
-            if user_update.full_name is not None:
-                update_fields.append("full_name = ?")
-                values.append(user_update.full_name)
-
-            if user_update.is_active is not None:
-                update_fields.append("is_active = ?")
-                values.append(user_update.is_active)
-
-            if user_update.last_login is not None:
-                update_fields.append("last_login = ?")
-                values.append(user_update.last_login)
-
-            if not update_fields:
-                log_debug(f"No fields to update for user {user_id}")
-                return True
-
-            update_fields.append("updated_at = CURRENT_TIMESTAMP")
-            values.append(user_id)
-
-            query = f"UPDATE users SET {', '.join(update_fields)} WHERE user_id = ?"
-            conn.execute(query, values)
-
-            conn.close()
             log_info(f"Updated user {user_id}")
             return True
 
@@ -303,18 +188,26 @@ class UserRepository:
             True if successful, False otherwise
         """
         try:
-            conn = get_db_connection()
+            with get_db_session() as session:
+                session_ids = session.execute(
+                    select(ChatSessionORM.chat_session_id).where(ChatSessionORM.user_id == user_id)
+                ).scalars().all()
 
-            # Delete user's chat messages first
-            conn.execute("DELETE FROM chat_messages WHERE chat_id IN (SELECT chat_id FROM chats WHERE user_id = ?)", [user_id])
+                if session_ids:
+                    session.execute(
+                        ChatMessageORM.__table__.delete().where(
+                            ChatMessageORM.chat_session_id.in_(session_ids)
+                        )
+                    )
 
-            # Delete user's chats
-            conn.execute("DELETE FROM chats WHERE user_id = ?", [user_id])
+                session.execute(
+                    ChatSessionORM.__table__.delete().where(ChatSessionORM.user_id == user_id)
+                )
 
-            # Delete the user
-            conn.execute("DELETE FROM users WHERE user_id = ?", [user_id])
+                session.execute(
+                    UserORM.__table__.delete().where(UserORM.user_id == user_id)
+                )
 
-            conn.close()
             log_info(f"Permanently deleted user {user_id} and associated data")
             return True
 
@@ -334,15 +227,13 @@ class UserRepository:
             True if successful, False otherwise
         """
         try:
-            conn = get_db_connection()
+            with get_db_session() as session:
+                user = session.get(UserORM, user_id)
+                if user is None:
+                    return False
+                user.is_active = False
+                user.updated_at = func.current_timestamp()
 
-            conn.execute("""
-                UPDATE users
-                SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP
-                WHERE user_id = ?
-            """, [user_id])
-
-            conn.close()
             log_info(f"Deactivated user {user_id}")
             return True
 
@@ -362,20 +253,39 @@ class UserRepository:
             True if successful, False otherwise
         """
         try:
-            conn = get_db_connection()
+            with get_db_session() as session:
+                user = session.get(UserORM, user_id)
+                if user is None:
+                    return False
+                user.last_login = func.current_timestamp()
+                user.updated_at = func.current_timestamp()
 
-            conn.execute("""
-                UPDATE users
-                SET last_login = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
-                WHERE user_id = ?
-            """, [user_id])
-
-            conn.close()
             log_debug(f"Updated last login for user {user_id}")
             return True
 
         except Exception as e:
             log_error(f"Error updating last login for user {user_id}: {e}")
+            return False
+
+    @staticmethod
+    def check_user_exists(user_id: str) -> bool:
+        """
+        Check if a user with the given user_id exists.
+
+        Args:
+            user_id: The user_id to check
+
+        Returns:
+            True if the user exists, False otherwise
+        """
+        try:
+            with get_db_session() as session:
+                count = session.execute(
+                    select(func.count()).select_from(UserORM).where(UserORM.user_id == user_id)
+                ).scalar_one()
+                return count > 0
+        except Exception as e:
+            log_error(f"Error checking user existence: {e}")
             return False
 
     @staticmethod
@@ -390,10 +300,11 @@ class UserRepository:
             True if username exists, False otherwise
         """
         try:
-            conn = get_db_connection()
-            result = conn.execute("SELECT COUNT(*) FROM users WHERE username = ?", [username]).fetchone()
-            conn.close()
-            return result[0] > 0
+            with get_db_session() as session:
+                count = session.execute(
+                    select(func.count()).select_from(UserORM).where(UserORM.username == username)
+                ).scalar_one()
+                return count > 0
         except Exception as e:
             log_error(f"Error checking username existence: {e}")
             return False
@@ -410,10 +321,11 @@ class UserRepository:
             True if email exists, False otherwise
         """
         try:
-            conn = get_db_connection()
-            result = conn.execute("SELECT COUNT(*) FROM users WHERE email = ?", [email]).fetchone()
-            conn.close()
-            return result[0] > 0
+            with get_db_session() as session:
+                count = session.execute(
+                    select(func.count()).select_from(UserORM).where(UserORM.email == email)
+                ).scalar_one()
+                return count > 0
         except Exception as e:
             log_error(f"Error checking email existence: {e}")
             return False
@@ -421,57 +333,86 @@ class UserRepository:
     @staticmethod
     def create_anonymous_user(device_id: Optional[str] = None) -> str:
         """
-        Create an anonymous user.
+        Create a guest user with an auto-generated username/email.
 
         Args:
-            device_id: Optional device identifier (for logging purposes only, not stored)
+            device_id: Optional device identifier, folded into the generated username
 
         Returns:
             The user_id of the newly created anonymous user
         """
-        try:
-            conn = get_db_connection()
-
-            user_id =str(uuid.uuid4())
-            username = f"anonymous_{str(uuid.uuid4())[:8]}"
-            email = f"{username}@anonymous.local"
-            password_hash = "ANONYMOUS_USER_NO_PASSWORD"
-            full_name = None  # Keep full_name empty for anonymous users
-
-            conn.execute("""
-                INSERT INTO users (
-                    user_id, username, email, password_hash, full_name,
-                    created_at, updated_at, is_active, last_login
-                )
-                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, TRUE, NULL)
-            """, [user_id, username, email, password_hash, full_name])
-
-            conn.close()
-            log_info(f"Created anonymous user: {user_id} (device_id: {device_id if device_id else 'none'})")
-            return user_id
-
-        except Exception as e:
-            log_error(f"Error creating anonymous user: {e}")
-            raise
+        suffix = device_id or uuid.uuid4().hex[:12]
+        user_create = UserCreate(
+            username=f"guest_{uuid.uuid4().hex[:12]}",
+            email=f"anon_{suffix}_{uuid.uuid4().hex[:8]}@anon.personalai.internal",
+            password_hash="",
+        )
+        return UserRepository.create_user(user_create)
 
     @staticmethod
-    def check_user_exists(user_id: str) -> bool:
+    def is_anonymous_user(user_id: str) -> bool:
         """
-        Check if a user ID exists.
+        Check whether a user_id refers to a guest account created via
+        create_anonymous_user (identified by its "@anon.personalai.internal" email domain).
 
         Args:
-            user_id: The user ID to check
+            user_id: The user_id to check
 
         Returns:
-            True if user exists, False otherwise
+            True if the user is an anonymous/guest user, False otherwise
         """
         try:
-            conn = get_db_connection()
-            result = conn.execute("SELECT COUNT(*) FROM users WHERE user_id = ?", [user_id]).fetchone()
-            conn.close()
-            return result[0] > 0
+            with get_db_session() as session:
+                user = session.get(UserORM, user_id)
+                return bool(user and user.email.endswith("@anon.personalai.internal"))
         except Exception as e:
-            log_error(f"Error checking user existence: {e}")
+            log_error(f"Error checking anonymous status for user {user_id}: {e}")
             return False
 
+    @staticmethod
+    def migrate_user_data(from_user_id: str, to_user_id: str) -> bool:
+        """
+        Reassign chat sessions (and their messages, via the FK) from an
+        anonymous user to a real user.
 
+        Args:
+            from_user_id: The anonymous user_id to migrate data from
+            to_user_id: The user_id to migrate data to
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            with get_db_session() as session:
+                session.execute(
+                    ChatSessionORM.__table__.update()
+                    .where(ChatSessionORM.user_id == from_user_id)
+                    .values(user_id=to_user_id)
+                )
+            log_info(f"Migrated chat sessions from user {from_user_id} to {to_user_id}")
+            return True
+        except Exception as e:
+            log_error(f"Error migrating data from {from_user_id} to {to_user_id}: {e}")
+            return False
+
+    @staticmethod
+    def delete_anonymous_user(user_id: str) -> bool:
+        """
+        Delete an anonymous user row after its data has been migrated.
+
+        Args:
+            user_id: The anonymous user_id to delete
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            with get_db_session() as session:
+                session.execute(
+                    UserORM.__table__.delete().where(UserORM.user_id == user_id)
+                )
+            log_info(f"Deleted anonymous user {user_id}")
+            return True
+        except Exception as e:
+            log_error(f"Error deleting anonymous user {user_id}: {e}")
+            return False

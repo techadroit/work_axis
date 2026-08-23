@@ -3,10 +3,34 @@ import json
 import uuid
 from typing import List, Optional
 
-from src.app.server.database.db_session import get_db_connection, TABLE_MODEL_PROVIDERS
+from sqlalchemy import select
+
+from src.app.server.database.db_session import get_db_session
+from src.app.server.database.orm_models import ModelProviderORM
 from src.app.server.schemas.model_provider_schemas import ModelProvider, ModelProviderCreate
 from src.app.utils.logger_util import log_info, log_error, log_debug
 from core.utils.time_util import get_utc_time
+
+
+def _to_model_provider(row: ModelProviderORM) -> ModelProvider:
+    return ModelProvider(
+        id=row.id,
+        provider_name=row.provider_name,
+        api_key=row.api_key,
+        base_url=row.base_url,
+        api_version=row.api_version,
+        deployment_name=row.deployment_name,
+        aws_access_key_id=row.aws_access_key_id,
+        aws_secret_access_key=row.aws_secret_access_key,
+        region=row.region,
+        config_json=row.config_json,
+        model_list=json.loads(row.model_list) if row.model_list else [],
+        model_provider=row.model_provider,
+        selected_model=row.selected_model,
+        is_primary=bool(row.is_primary) if row.is_primary is not None else False,
+        created_at=str(row.created_at) if row.created_at else None,
+        updated_at=str(row.updated_at) if row.updated_at else None,
+    )
 
 
 class ModelProviderRepository:
@@ -27,113 +51,60 @@ class ModelProviderRepository:
             Exception: If operation fails
         """
         try:
-            conn = get_db_connection()
             model_list = json.dumps(provider_create.model_list)
-
-            # Check if provider with this name already exists
-            existing = conn.execute(f"""
-                SELECT id FROM {TABLE_MODEL_PROVIDERS}
-                WHERE provider_name = ?
-            """, [provider_create.provider_name]).fetchone()
-
-            provider_id = existing[0] if existing else str(uuid.uuid4())
             current_time = get_utc_time()
 
-            if existing:
-                # Update existing provider
-                conn.execute(f"""
-                    UPDATE {TABLE_MODEL_PROVIDERS}
-                    SET api_key = ?,
-                        base_url = ?,
-                        api_version = ?,
-                        deployment_name = ?,
-                        aws_access_key_id = ?,
-                        aws_secret_access_key = ?,
-                        region = ?,
-                        config_json = ?,
-                        model_list = ?,
-                        model_provider = ?,
-                        selected_model = ?,
-                        is_primary = ?,
-                        updated_at = ?
-                    WHERE id = ?
-                """, [
-                    provider_create.api_key,
-                    provider_create.base_url,
-                    provider_create.api_version,
-                    provider_create.deployment_name,
-                    provider_create.aws_access_key_id,
-                    provider_create.aws_secret_access_key,
-                    provider_create.region,
-                    provider_create.config_json,
-                    model_list,
-                    provider_create.model_provider,
-                    provider_create.selected_model,
-                    provider_create.is_primary,
-                    current_time,
-                    provider_id
-                ])
-                log_info(f"Updated model provider: {provider_create.provider_name}")
-            else:
-                # Insert new provider
-                conn.execute(f"""
-                    INSERT INTO {TABLE_MODEL_PROVIDERS} (
-                        id, provider_name, api_key, base_url, api_version,
-                        deployment_name, aws_access_key_id, aws_secret_access_key,
-                        region, config_json, model_list, model_provider, selected_model, is_primary, created_at, updated_at
+            with get_db_session() as session:
+                existing = session.execute(
+                    select(ModelProviderORM).where(
+                        ModelProviderORM.provider_name == provider_create.provider_name
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, [
-                    provider_id,
-                    provider_create.provider_name,
-                    provider_create.api_key,
-                    provider_create.base_url,
-                    provider_create.api_version,
-                    provider_create.deployment_name,
-                    provider_create.aws_access_key_id,
-                    provider_create.aws_secret_access_key,
-                    provider_create.region,
-                    provider_create.config_json,
-                    model_list,
-                    provider_create.model_provider,
-                    provider_create.selected_model,
-                    provider_create.is_primary,
-                    current_time,
-                    current_time
-                ])
-                log_info(f"Created new model provider: {provider_create.provider_name}")
+                ).scalar_one_or_none()
 
-            # Fetch and return the created/updated provider
-            result = conn.execute(f"""
-                SELECT id, provider_name, api_key, base_url, api_version,
-                       deployment_name, aws_access_key_id, aws_secret_access_key,
-                       region, config_json, model_list, model_provider, selected_model, is_primary, created_at, updated_at
-                FROM {TABLE_MODEL_PROVIDERS}
-                WHERE id = ?
-            """, [provider_id]).fetchone()
+                if existing:
+                    existing.api_key = provider_create.api_key
+                    existing.base_url = provider_create.base_url
+                    existing.api_version = provider_create.api_version
+                    existing.deployment_name = provider_create.deployment_name
+                    existing.aws_access_key_id = provider_create.aws_access_key_id
+                    existing.aws_secret_access_key = provider_create.aws_secret_access_key
+                    existing.region = provider_create.region
+                    existing.config_json = provider_create.config_json
+                    existing.model_list = model_list
+                    existing.model_provider = provider_create.model_provider
+                    existing.selected_model = provider_create.selected_model
+                    existing.is_primary = provider_create.is_primary
+                    existing.updated_at = current_time
+                    provider_id = existing.id
+                    log_info(f"Updated model provider: {provider_create.provider_name}")
+                else:
+                    provider_id = str(uuid.uuid4())
+                    new_provider = ModelProviderORM(
+                        id=provider_id,
+                        provider_name=provider_create.provider_name,
+                        api_key=provider_create.api_key,
+                        base_url=provider_create.base_url,
+                        api_version=provider_create.api_version,
+                        deployment_name=provider_create.deployment_name,
+                        aws_access_key_id=provider_create.aws_access_key_id,
+                        aws_secret_access_key=provider_create.aws_secret_access_key,
+                        region=provider_create.region,
+                        config_json=provider_create.config_json,
+                        model_list=model_list,
+                        model_provider=provider_create.model_provider,
+                        selected_model=provider_create.selected_model,
+                        is_primary=provider_create.is_primary,
+                        created_at=current_time,
+                        updated_at=current_time,
+                    )
+                    session.add(new_provider)
+                    log_info(f"Created new model provider: {provider_create.provider_name}")
 
-            conn.close()
+                session.flush()
+                result = session.get(ModelProviderORM, provider_id)
 
-            if result:
-                return ModelProvider(
-                    id=result[0],
-                    provider_name=result[1],
-                    api_key=result[2],
-                    base_url=result[3],
-                    api_version=result[4],
-                    deployment_name=result[5],
-                    aws_access_key_id=result[6],
-                    aws_secret_access_key=result[7],
-                    region=result[8],
-                    config_json=result[9],
-                    model_list = json.loads(result[10]) if result and result[10] else [],
-                    selected_model=result[11],
-                    model_provider=result[12],
-                    is_primary=bool(result[13]) if result[13] is not None else False,
-                    created_at=str(result[14]) if result[14] else None,
-                    updated_at=str(result[15]) if result[15] else None
-                )
-            else:
+                if result:
+                    return _to_model_provider(result)
                 raise Exception("Failed to retrieve created/updated provider")
 
         except Exception as e:
@@ -149,44 +120,16 @@ class ModelProviderRepository:
             ModelProvider or None if no primary provider is set
         """
         try:
-            conn = get_db_connection()
+            with get_db_session() as session:
+                result = session.execute(
+                    select(ModelProviderORM).where(ModelProviderORM.is_primary == 1).limit(1)
+                ).scalar_one_or_none()
 
-            result = conn.execute(f"""
-                SELECT id, provider_name, api_key, base_url, api_version,
-                       deployment_name, aws_access_key_id, aws_secret_access_key,
-                       region, config_json, model_list, model_provider, selected_model, is_primary, created_at, updated_at
-                FROM {TABLE_MODEL_PROVIDERS}
-                WHERE is_primary = 1
-                LIMIT 1
-            """).fetchone()
-
-            conn.close()
-
-            if result:
-                return ModelProvider(
-                    id=result[0],
-                    provider_name=result[1],
-                    api_key=result[2],
-                    base_url=result[3],
-                    api_version=result[4],
-                    deployment_name=result[5],
-                    aws_access_key_id=result[6],
-                    aws_secret_access_key=result[7],
-                    region=result[8],
-                    config_json=result[9],
-                    model_list = json.loads(result[10]) if result and result[10] else [],
-                    model_provider=result[11],
-                    selected_model=result[12],
-                    is_primary=bool(result[13]) if result[13] is not None else False,
-                    created_at=str(result[14]) if result[14] else None,
-                    updated_at=str(result[15]) if result[15] else None
-                )
-            return None
+                return _to_model_provider(result) if result else None
 
         except Exception as e:
             log_error(f"Error getting model provider by name: {e}")
             raise
-
 
     @staticmethod
     def get_provider_by_name(provider_name: str) -> Optional[ModelProvider]:
@@ -200,38 +143,12 @@ class ModelProviderRepository:
             ModelProvider or None if not found
         """
         try:
-            conn = get_db_connection()
+            with get_db_session() as session:
+                result = session.execute(
+                    select(ModelProviderORM).where(ModelProviderORM.provider_name == provider_name)
+                ).scalar_one_or_none()
 
-            result = conn.execute(f"""
-                SELECT id, provider_name, api_key, base_url, api_version,
-                       deployment_name, aws_access_key_id, aws_secret_access_key,
-                       region, config_json, model_list, model_provider, selected_model, is_primary, created_at, updated_at
-                FROM {TABLE_MODEL_PROVIDERS}
-                WHERE provider_name = ?
-            """, [provider_name]).fetchone()
-
-            conn.close()
-
-            if result:
-                return ModelProvider(
-                    id=result[0],
-                    provider_name=result[1],
-                    api_key=result[2],
-                    base_url=result[3],
-                    api_version=result[4],
-                    deployment_name=result[5],
-                    aws_access_key_id=result[6],
-                    aws_secret_access_key=result[7],
-                    region=result[8],
-                    config_json=result[9],
-                    model_list = json.loads(result[10]) if result and result[10] else [],
-                    model_provider=result[11],
-                    selected_model=result[12],
-                    is_primary=bool(result[13]) if result[13] is not None else False,
-                    created_at=str(result[14]) if result[14] else None,
-                    updated_at=str(result[15]) if result[15] else None
-                )
-            return None
+                return _to_model_provider(result) if result else None
 
         except Exception as e:
             log_error(f"Error getting model provider by name: {e}")
@@ -246,38 +163,12 @@ class ModelProviderRepository:
             List of ModelProvider objects
         """
         try:
-            conn = get_db_connection()
+            with get_db_session() as session:
+                results = session.execute(
+                    select(ModelProviderORM).order_by(ModelProviderORM.created_at.desc())
+                ).scalars().all()
 
-            results = conn.execute(f"""
-                SELECT id, provider_name, api_key, base_url, api_version,
-                       deployment_name, aws_access_key_id, aws_secret_access_key,
-                       region, config_json, model_list, model_provider, selected_model, is_primary, created_at, updated_at
-                FROM {TABLE_MODEL_PROVIDERS}
-                ORDER BY created_at DESC
-            """).fetchall()
-
-            conn.close()
-
-            providers = []
-            for row in results:
-                providers.append(ModelProvider(
-                    id=row[0],
-                    provider_name=row[1],
-                    api_key=row[2],
-                    base_url=row[3],
-                    api_version=row[4],
-                    deployment_name=row[5],
-                    aws_access_key_id=row[6],
-                    aws_secret_access_key=row[7],
-                    region=row[8],
-                    config_json=row[9],
-                    model_list = json.loads(row[10]) if row and row[10] else [],
-                    model_provider=row[11],
-                    selected_model=row[12],
-                    is_primary=bool(row[13]) if row[13] is not None else False,
-                    created_at=str(row[14]) if row[14] else None,
-                    updated_at=str(row[15]) if row[15] else None
-                ))
+                providers = [_to_model_provider(row) for row in results]
 
             log_debug(f"Retrieved {len(providers)} model providers")
             return providers
@@ -301,26 +192,17 @@ class ModelProviderRepository:
             Exception: If deletion fails
         """
         try:
-            conn = get_db_connection()
+            with get_db_session() as session:
+                existing = session.execute(
+                    select(ModelProviderORM).where(ModelProviderORM.provider_name == provider_name)
+                ).scalar_one_or_none()
 
-            # Check if exists
-            existing = conn.execute(f"""
-                SELECT id FROM {TABLE_MODEL_PROVIDERS}
-                WHERE provider_name = ?
-            """, [provider_name]).fetchone()
+                if not existing:
+                    log_debug(f"Model provider not found: {provider_name}")
+                    return False
 
-            if not existing:
-                conn.close()
-                log_debug(f"Model provider not found: {provider_name}")
-                return False
+                session.delete(existing)
 
-            # Delete the provider
-            conn.execute(f"""
-                DELETE FROM {TABLE_MODEL_PROVIDERS}
-                WHERE provider_name = ?
-            """, [provider_name])
-
-            conn.close()
             log_info(f"Deleted model provider: {provider_name}")
             return True
 
@@ -343,30 +225,18 @@ class ModelProviderRepository:
             Exception: If deletion fails
         """
         try:
-            conn = get_db_connection()
+            with get_db_session() as session:
+                existing = session.get(ModelProviderORM, provider_id)
 
-            # Check if exists
-            existing = conn.execute(f"""
-                SELECT id FROM {TABLE_MODEL_PROVIDERS}
-                WHERE id = ?
-            """, [provider_id]).fetchone()
+                if not existing:
+                    log_debug(f"Model provider not found with ID: {provider_id}")
+                    return False
 
-            if not existing:
-                conn.close()
-                log_debug(f"Model provider not found with ID: {provider_id}")
-                return False
+                session.delete(existing)
 
-            # Delete the provider
-            conn.execute(f"""
-                DELETE FROM {TABLE_MODEL_PROVIDERS}
-                WHERE id = ?
-            """, [provider_id])
-
-            conn.close()
             log_info(f"Deleted model provider with ID: {provider_id}")
             return True
 
         except Exception as e:
             log_error(f"Error deleting model provider by ID: {e}")
             raise
-
