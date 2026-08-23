@@ -1,7 +1,10 @@
 """Chat message repository for managing chat message CRUD operations"""
 from typing import List, Optional, Tuple
 
-from src.app.server.database.db_session import get_db_connection, TABLE_CHAT_MESSAGES
+from sqlalchemy import select, func
+
+from src.app.server.database.db_session import get_db_session
+from src.app.server.database.orm_models import ChatMessageORM
 from src.app.server.database.models.chat_session_models import Message, MessageCreate, MessageUpdate
 from src.app.utils.logger_util import log_info, log_error, log_debug
 
@@ -24,32 +27,24 @@ class ChatMessageRepository:
             Exception: If message creation fails
         """
         try:
-            conn = get_db_connection()
-
-            conn.execute(f"""
-                INSERT INTO {TABLE_CHAT_MESSAGES} (
-                    message_id, chat_session_id, utc_time, sender, receiver,
-                    messages, mode, content_type, message_type, file_name, file_path, mime_type, created_at
+            with get_db_session() as session:
+                message = ChatMessageORM(
+                    message_id=message_create.message_id,
+                    chat_session_id=message_create.chat_session_id,
+                    utc_time=message_create.utc_time,
+                    sender=message_create.sender,
+                    receiver=message_create.receiver,
+                    messages=message_create.messages,
+                    mode=message_create.mode,
+                    content_type=message_create.content_type,
+                    message_type=message_create.message_type,
+                    file_name=message_create.file_name,
+                    file_path=message_create.file_path,
+                    mime_type=message_create.mime_type,
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-            """, [
-                message_create.message_id,
-                message_create.chat_session_id,
-                message_create.utc_time,
-                message_create.sender,
-                message_create.receiver,
-                message_create.messages,
-                message_create.mode,
-                message_create.content_type,
-                message_create.message_type,
-                message_create.file_name,
-                message_create.file_path,
-                message_create.mime_type
-            ])
+                session.add(message)
 
-            conn.close()
-            log_info(
-                f"Created new message: {message_create} ")
+            log_info(f"Created new message: {message_create} ")
             return message_create.message_id
 
         except Exception as e:
@@ -68,35 +63,9 @@ class ChatMessageRepository:
             Message model or None if not found
         """
         try:
-            conn = get_db_connection()
-
-            result = conn.execute(f"""
-                SELECT message_id, chat_session_id, utc_time, sender, receiver,
-                       messages, mode, created_at, content_type, message_type, 
-                       file_name, file_path, mime_type
-                FROM {TABLE_CHAT_MESSAGES}
-                WHERE message_id = ?
-            """, [message_id]).fetchone()
-
-            conn.close()
-
-            if result:
-                return Message(
-                    message_id=result[0],
-                    chat_session_id=result[1],
-                    utc_time=result[2],
-                    sender=result[3],
-                    receiver=result[4],
-                    messages=result[5],
-                    mode=result[6],
-                    created_at=result[7],
-                    content_type=result[8],
-                    message_type=result[9],
-                    file_name=result[10],
-                    file_path=result[11],
-                    mime_type=result[12]
-                )
-            return None
+            with get_db_session() as session:
+                message = session.get(ChatMessageORM, message_id)
+                return Message.model_validate(message) if message else None
 
         except Exception as e:
             log_error(f"Error getting message by ID {message_id}: {e}")
@@ -121,48 +90,25 @@ class ChatMessageRepository:
             Tuple of (List of Message models, total count)
         """
         try:
-            conn = get_db_connection()
+            offset = page * page_size
 
-            # Calculate offset
-            offset = (page) * page_size
+            with get_db_session() as session:
+                total_count = session.execute(
+                    select(func.count()).select_from(ChatMessageORM).where(
+                        ChatMessageORM.chat_session_id == chat_session_id
+                    )
+                ).scalar_one()
 
-            # Get total count
-            count_result = conn.execute(f"""
-                SELECT COUNT(*) FROM {TABLE_CHAT_MESSAGES}
-                WHERE chat_session_id = ?
-            """, [chat_session_id]).fetchone()
-            total_count = count_result[0] if count_result else 0
+                results = session.execute(
+                    select(ChatMessageORM)
+                    .where(ChatMessageORM.chat_session_id == chat_session_id)
+                    .order_by(ChatMessageORM.created_at.desc())
+                    .limit(page_size)
+                    .offset(offset)
+                ).scalars().all()
 
-            # Get paginated messages
-            results = conn.execute(f"""
-                SELECT message_id, chat_session_id, utc_time, sender, receiver,
-                       messages, mode, created_at, content_type, message_type,
-                       file_name, file_path, mime_type
-                FROM {TABLE_CHAT_MESSAGES}
-                WHERE chat_session_id = ?
-                ORDER BY created_at DESC
-                LIMIT ? OFFSET ?
-            """, [chat_session_id, page_size, offset]).fetchall()
+                messages = [Message.model_validate(row) for row in results]
 
-            conn.close()
-
-            messages = []
-            for row in results:
-                messages.append(Message(
-                    message_id=row[0],
-                    chat_session_id=row[1],
-                    utc_time=row[2],
-                    sender=row[3],
-                    receiver=row[4],
-                    messages=row[5],
-                    mode=row[6],
-                    created_at=row[7],
-                    content_type=row[8],
-                    message_type=row[9],
-                    file_name=row[10],
-                    file_path=row[11],
-                    mime_type=row[12]
-                ))
             log_debug(messages)
             log_debug(f"Retrieved {len(messages)} messages for chat session {chat_session_id} (page {page})")
             return messages, total_count
@@ -183,36 +129,14 @@ class ChatMessageRepository:
             List of Message models
         """
         try:
-            conn = get_db_connection()
+            with get_db_session() as session:
+                results = session.execute(
+                    select(ChatMessageORM)
+                    .where(ChatMessageORM.chat_session_id == chat_session_id)
+                    .order_by(ChatMessageORM.created_at.asc())
+                ).scalars().all()
 
-            results = conn.execute(f"""
-                SELECT message_id, chat_session_id, utc_time, sender, receiver,
-                       messages, mode, created_at, content_type, message_type,
-                       file_name, file_path, mime_type
-                FROM {TABLE_CHAT_MESSAGES}
-                WHERE chat_session_id = ?
-                ORDER BY created_at ASC
-            """, [chat_session_id]).fetchall()
-
-            conn.close()
-
-            messages = []
-            for row in results:
-                messages.append(Message(
-                    message_id=row[0],
-                    chat_session_id=row[1],
-                    utc_time=row[2],
-                    sender=row[3],
-                    receiver=row[4],
-                    messages=row[5],
-                    mode=row[6],
-                    created_at=row[7],
-                    content_type=row[8],
-                    message_type=row[9],
-                    file_name=row[10],
-                    file_path=row[11],
-                    mime_type=row[12]
-                ))
+                messages = [Message.model_validate(row) for row in results]
 
             log_debug(f"Retrieved {len(messages)} messages for chat session {chat_session_id}")
             return messages
@@ -234,21 +158,19 @@ class ChatMessageRepository:
             True if successful, False otherwise
         """
         try:
-            conn = get_db_connection()
-
-            if message_update.messages is not None:
-                conn.execute(f"""
-                    UPDATE {TABLE_CHAT_MESSAGES}
-                    SET messages = ?
-                    WHERE message_id = ?
-                """, [message_update.messages, message_id])
-
-                conn.close()
-                log_info(f"Updated message {message_id}")
-                return True
-            else:
+            if message_update.messages is None:
                 log_debug(f"No fields to update for message {message_id}")
                 return True
+
+            with get_db_session() as session:
+                message = session.get(ChatMessageORM, message_id)
+                if message is None:
+                    log_debug(f"Message {message_id} not found for update")
+                    return True
+                message.messages = message_update.messages
+
+            log_info(f"Updated message {message_id}")
+            return True
 
         except Exception as e:
             log_error(f"Error updating message {message_id}: {e}")
@@ -266,11 +188,11 @@ class ChatMessageRepository:
             True if successful, False otherwise
         """
         try:
-            conn = get_db_connection()
+            with get_db_session() as session:
+                session.execute(
+                    ChatMessageORM.__table__.delete().where(ChatMessageORM.message_id == message_id)
+                )
 
-            conn.execute(f"DELETE FROM {TABLE_CHAT_MESSAGES} WHERE message_id = ?", [message_id])
-
-            conn.close()
             log_info(f"Deleted message {message_id}")
             return True
 
@@ -290,14 +212,13 @@ class ChatMessageRepository:
             True if successful, False otherwise
         """
         try:
-            conn = get_db_connection()
+            with get_db_session() as session:
+                session.execute(
+                    ChatMessageORM.__table__.delete().where(
+                        ChatMessageORM.chat_session_id == chat_session_id
+                    )
+                )
 
-            conn.execute(f"""
-                DELETE FROM {TABLE_CHAT_MESSAGES}
-                WHERE chat_session_id = ?
-            """, [chat_session_id])
-
-            conn.close()
             log_info(f"Deleted all messages for chat session {chat_session_id}")
             return True
 
@@ -317,16 +238,13 @@ class ChatMessageRepository:
             Total number of messages
         """
         try:
-            conn = get_db_connection()
+            with get_db_session() as session:
+                count = session.execute(
+                    select(func.count()).select_from(ChatMessageORM).where(
+                        ChatMessageORM.chat_session_id == chat_session_id
+                    )
+                ).scalar_one()
 
-            result = conn.execute(f"""
-                SELECT COUNT(*) FROM {TABLE_CHAT_MESSAGES}
-                WHERE chat_session_id = ?
-            """, [chat_session_id]).fetchone()
-
-            conn.close()
-
-            count = result[0] if result else 0
             log_debug(f"Message count for chat session {chat_session_id}: {count}")
             return count
 
@@ -350,37 +268,15 @@ class ChatMessageRepository:
             List of Message models (latest first)
         """
         try:
-            conn = get_db_connection()
+            with get_db_session() as session:
+                results = session.execute(
+                    select(ChatMessageORM)
+                    .where(ChatMessageORM.chat_session_id == chat_session_id)
+                    .order_by(ChatMessageORM.created_at.desc())
+                    .limit(limit)
+                ).scalars().all()
 
-            results = conn.execute(f"""
-                SELECT message_id, chat_session_id, utc_time, sender, receiver,
-                       messages, mode, created_at, content_type, message_type,
-                       file_name, file_path, mime_type
-                FROM {TABLE_CHAT_MESSAGES}
-                WHERE chat_session_id = ?
-                ORDER BY created_at DESC
-                LIMIT ?
-            """, [chat_session_id, limit]).fetchall()
-
-            conn.close()
-
-            messages = []
-            for row in results:
-                messages.append(Message(
-                    message_id=row[0],
-                    chat_session_id=row[1],
-                    utc_time=row[2],
-                    sender=row[3],
-                    receiver=row[4],
-                    messages=row[5],
-                    mode=row[6],
-                    created_at=row[7],
-                    content_type=row[8],
-                    message_type=row[9],
-                    file_name=row[10],
-                    file_path=row[11],
-                    mime_type=row[12]
-                ))
+                messages = [Message.model_validate(row) for row in results]
 
             log_debug(f"Retrieved {len(messages)} latest messages for chat session {chat_session_id}")
             return messages
@@ -409,49 +305,28 @@ class ChatMessageRepository:
             Tuple of (List of Message models, total count)
         """
         try:
-            conn = get_db_connection()
-
-            # Calculate offset
             offset = (page - 1) * page_size
             search_pattern = f"%{search_term}%"
 
-            # Get total count
-            count_result = conn.execute(f"""
-                SELECT COUNT(*) FROM {TABLE_CHAT_MESSAGES}
-                WHERE chat_session_id = ? AND messages LIKE ?
-            """, [chat_session_id, search_pattern]).fetchone()
-            total_count = count_result[0] if count_result else 0
+            with get_db_session() as session:
+                filter_clause = (
+                    (ChatMessageORM.chat_session_id == chat_session_id)
+                    & (ChatMessageORM.messages.like(search_pattern))
+                )
 
-            # Get paginated search results
-            results = conn.execute(f"""
-                SELECT message_id, chat_session_id, utc_time, sender, receiver,
-                       messages, mode, created_at, content_type, message_type,
-                       file_name, file_path, mime_type
-                FROM {TABLE_CHAT_MESSAGES}
-                WHERE chat_session_id = ? AND messages LIKE ?
-                ORDER BY created_at DESC
-                LIMIT ? OFFSET ?
-            """, [chat_session_id, search_pattern, page_size, offset]).fetchall()
+                total_count = session.execute(
+                    select(func.count()).select_from(ChatMessageORM).where(filter_clause)
+                ).scalar_one()
 
-            conn.close()
+                results = session.execute(
+                    select(ChatMessageORM)
+                    .where(filter_clause)
+                    .order_by(ChatMessageORM.created_at.desc())
+                    .limit(page_size)
+                    .offset(offset)
+                ).scalars().all()
 
-            messages = []
-            for row in results:
-                messages.append(Message(
-                    message_id=row[0],
-                    chat_session_id=row[1],
-                    utc_time=row[2],
-                    sender=row[3],
-                    receiver=row[4],
-                    messages=row[5],
-                    mode=row[6],
-                    created_at=row[7],
-                    content_type=row[8],
-                    message_type=row[9],
-                    file_name=row[10],
-                    file_path=row[11],
-                    mime_type=row[12]
-                ))
+                messages = [Message.model_validate(row) for row in results]
 
             log_debug(f"Found {len(messages)} messages matching '{search_term}' in chat session {chat_session_id}")
             return messages, total_count

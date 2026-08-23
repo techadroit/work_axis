@@ -1,120 +1,76 @@
+from contextlib import contextmanager
 from pathlib import Path
+from threading import Lock
+from typing import Iterator
 
-import duckdb
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import StaticPool
 
 from core.utils.file_util import get_data_path
 from src.app.utils.logger_util import log_info, log_error, log_debug
+from src.app.server.database.orm_models import Base
 
 _path = get_data_path()/"database"/"app.db"
 log_debug(_path)
 DB_PATH = Path(_path)
 
-TABLE_CHAT_SESSIONS = "chat_sessions"
-TABLE_CHAT_MESSAGES = "chat_messages"
-TABLE_USERS = "users"
-TABLE_MODEL_PROVIDERS = "model_providers"
+# DuckDB only allows a single OS-level connection to a database file at a time,
+# even from within the same process. StaticPool keeps exactly one underlying
+# DBAPI connection alive for the lifetime of the engine and hands it out to
+# every Session, instead of opening a new connection per session, or callers
+# would collide with "file is being used by another process" and silently
+# lose writes.
+engine = create_engine(
+    f"duckdb:///{DB_PATH}",
+    poolclass=StaticPool,
+)
+SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
+
+# FastAPI runs sync route handlers in a threadpool, so concurrent requests can
+# each get a Session bound to the same shared StaticPool connection at once.
+# Without serializing access, two threads racing to begin a transaction on
+# that single physical connection raise "cannot start a transaction within a
+# transaction". This lock enforces one active session at a time.
+_db_lock = Lock()
+
+
+@contextmanager
+def get_db_session() -> Iterator[Session]:
+    """
+    Context manager yielding a SQLAlchemy session backed by the shared
+    single DuckDB connection. Commits on success, rolls back and re-raises
+    on failure, and always closes the session.
+    """
+    with _db_lock:
+        session = SessionLocal()
+        try:
+            yield session
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
 
 
 def initialize_database():
     """
-    Initialize DuckDB database with required tables on startup.
-    Creates: users, chat_sessions, chat_messages tables
+    Initialize DuckDB database with required tables on startup via the
+    SQLAlchemy ORM metadata (see orm_models.py for table/column definitions).
+    Creates: users, chat_sessions, chat_messages, model_providers.
     """
     try:
         # Ensure the database directory exists
         DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-        # Connect to DuckDB
-        conn = duckdb.connect(str(DB_PATH))
 
-        # Create users table
-        conn.execute(f"""
-            CREATE TABLE IF NOT EXISTS {TABLE_USERS} (
-                user_id VARCHAR PRIMARY KEY,
-                username VARCHAR UNIQUE NOT NULL,
-                email VARCHAR UNIQUE NOT NULL,
-                password_hash VARCHAR NOT NULL,
-                full_name VARCHAR,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                is_active BOOLEAN DEFAULT TRUE,
-                last_login TIMESTAMP
-            )
-        """)
-
-        conn.execute(f"""
-            CREATE TABLE IF NOT EXISTS {TABLE_CHAT_SESSIONS} (
-                chat_session_id VARCHAR PRIMARY KEY,
-                user_id VARCHAR NOT NULL,
-                title VARCHAR,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                is_archived BOOLEAN DEFAULT FALSE,
-                FOREIGN KEY (user_id) REFERENCES users(user_id)
-            )
-        """)
-
-        # Create chat_messages table
-        conn.execute(f"""
-            CREATE TABLE IF NOT EXISTS {TABLE_CHAT_MESSAGES} (
-                message_id VARCHAR PRIMARY KEY,
-                chat_session_id VARCHAR NOT NULL,
-                utc_time VARCHAR NOT NULL,
-                sender VARCHAR NOT NULL,
-                receiver VARCHAR NOT NULL,
-                messages TEXT NOT NULL,
-                content_type TEXT NOT NULL,
-                message_type TEXT NOT NULL,
-                mode VARCHAR DEFAULT 'none',
-                file_name VARCHAR,
-                file_path VARCHAR,
-                mime_type VARCHAR,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (chat_session_id) REFERENCES chat_sessions(chat_session_id)
-            )
-        """)
-
-        # Create indexes for better query performance
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_chat_sessions_user_id ON chat_sessions(user_id)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_chat_messages_chat_session_id ON chat_messages(chat_session_id)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_chat_messages_created_at ON chat_messages(created_at)")
-
-        # Create model_providers table
-        conn.execute(f"""
-            CREATE TABLE IF NOT EXISTS {TABLE_MODEL_PROVIDERS} (
-                id VARCHAR PRIMARY KEY,
-                provider_name VARCHAR NOT NULL,
-                api_key VARCHAR,
-                base_url VARCHAR,
-                api_version VARCHAR,
-                deployment_name VARCHAR,
-                aws_access_key_id VARCHAR,
-                aws_secret_access_key VARCHAR,
-                region VARCHAR,
-                config_json TEXT,
-                model_list TEXT,
-                model_provider VARCHAR,
-                selected_model VARCHAR,
-                is_primary INTEGER DEFAULT 0,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
+        Base.metadata.create_all(engine)
 
         log_info(f"Database initialized successfully at {DB_PATH}")
-
-        conn.close()
 
     except Exception as e:
         log_error(f"Failed to initialize database: {e}")
         raise
-
-
-def get_db_connection():
-    """
-    Get a connection to the DuckDB database.
-    Returns a duckdb.DuckDBPyConnection object.
-    """
-    return duckdb.connect(str(DB_PATH))
 
 
 # if __name__ == "__main__":
