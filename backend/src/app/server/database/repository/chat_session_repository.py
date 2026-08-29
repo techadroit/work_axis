@@ -217,15 +217,17 @@ class ChatSessionRepository:
             True if successful, False otherwise
         """
         try:
+            # DuckDB's foreign key check doesn't see the message delete below
+            # if it's uncommitted, so it must land in its own transaction
+            # before the parent chat_sessions row is deleted.
             with get_db_session() as session:
-                # Delete all messages first (due to foreign key constraint)
                 session.execute(
                     ChatMessageORM.__table__.delete().where(
                         ChatMessageORM.chat_session_id == chat_session_id
                     )
                 )
 
-                # Delete the chat
+            with get_db_session() as session:
                 session.execute(
                     ChatSessionORM.__table__.delete().where(
                         ChatSessionORM.chat_session_id == chat_session_id
