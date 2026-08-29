@@ -49,6 +49,11 @@ export const ChatInterface = () => {
   // Ref for typing timeout
   const typingTimeoutRef = useRef<number | null>(null);
 
+  // Set while ensureSession() is navigating a draft chat to its newly created
+  // session id, so the sessionId-change effect below doesn't clobber the
+  // typing indicator that's about to be shown for the first message.
+  const skipTypingResetRef = useRef(false);
+
   // Listen for chat messages (MessageType.MESSAGE)
   useChatMessageListener();
 
@@ -82,11 +87,15 @@ export const ChatInterface = () => {
       logger.info('Loading chat interface', { sessionId, pageNo: 0, pageSize });
       chatDispatch(loadMessages({ sessionId, pageNo: 0, pageSize }));
 
-      // Clear typing indicator and timeout when switching sessions
-      chatDispatch(setTyping(false));
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-        typingTimeoutRef.current = null;
+      if (skipTypingResetRef.current) {
+        skipTypingResetRef.current = false;
+      } else {
+        // Clear typing indicator and timeout when switching sessions
+        chatDispatch(setTyping(false));
+        if (typingTimeoutRef.current) {
+          clearTimeout(typingTimeoutRef.current);
+          typingTimeoutRef.current = null;
+        }
       }
     }
   }, [sessionId, pageSize, chatDispatch]);
@@ -152,6 +161,7 @@ export const ChatInterface = () => {
     chatSessionDispatch(selectSession(newSessionId));
 
     // Replace URL so the current screen becomes the real session screen
+    skipTypingResetRef.current = true;
     navigate(`/chat/${newSessionId}`, { replace: true });
 
     return newSessionId;

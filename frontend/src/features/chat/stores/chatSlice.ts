@@ -133,8 +133,10 @@ const chatSlice = createSlice({
         state.streamingMessagesByChatSession[sessionId] = [];
       }
 
-      // Clear typing indicator when receiving a message from assistant
-      if (message.sender === 'assistant' || message.sender !== message.receiver) {
+      // Clear typing indicator only for messages actually from the assistant;
+      // this also matches an echo of the user's own outgoing message (sender !== 'assistant')
+      // which would otherwise cancel the indicator before the assistant replies.
+      if (message.sender === 'assistant') {
         state.isTyping = false;
       }
 
