@@ -37,6 +37,7 @@ class AppState(TypedDict):
     route: Optional[str] = None
     chat_title: Annotated[Optional[str], overwrite_reducer]
     session_id: Optional[str] = None
+    user_id: Optional[str] = None
 
 
 class ConversationState(TypedDict):
@@ -67,3 +68,12 @@ class DocumentState(TypedDict):
     tool_calls: Optional[List[Dict[str, Any]]] = None  # Tool calls from the agent
     final_answer: Optional[str] = None  # Final answer from the agent
     session_id: Optional[str] = None
+
+
+class EmailState(TypedDict):
+    # Messages have the type "list". The `add_messages` function
+    # in the annotation defines how this state key should be updated
+    # (in this case, it appends messages to the list, rather than overwriting them)
+    messages: Annotated[list[AnyMessage], add_messages]
+    session_id: Optional[str] = None
+    user_id: Optional[str] = None

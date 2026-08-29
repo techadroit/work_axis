@@ -115,8 +115,9 @@ class ChromaVectorDbClient(VectorDbClient):
         metadatas = []
 
         for item in data:
-            # Generate unique ID
-            item_id = str(uuid.uuid4())
+            # Use the caller-supplied deterministic ID when present (enables
+            # idempotent upsert-on-resync), otherwise generate a random one.
+            item_id = item.id or str(uuid.uuid4())
             ids.append(item_id)
 
             embeddings.append(item.embedding)
@@ -127,8 +128,9 @@ class ChromaVectorDbClient(VectorDbClient):
             log_debug(
                 f"Inserting vector - ID: {item_id}, Document length: {len(item.payload.document)}, Metadata: {metadata}")
 
-        # Add to collection
-        collection.add(
+        # upsert (not add) so re-inserting an existing id overwrites in place
+        # instead of erroring - required for idempotent resync.
+        collection.upsert(
             ids=ids,
             embeddings=embeddings,
             documents=documents,
@@ -136,6 +138,18 @@ class ChromaVectorDbClient(VectorDbClient):
         )
 
         log_debug(f"Successfully inserted {len(data)} vectors into collection '{collection_name}'")
+
+    def delete_by_filter(self, collection_name: str, filter_query: dict):
+        """
+        Delete vectors matching a metadata filter from a ChromaDB collection.
+
+        Args:
+            collection_name: Name of the collection
+            filter_query: Chroma `where` filter, e.g. {"email_account_id": {"$eq": "..."}}
+        """
+        collection = self.client.get_collection(name=collection_name)
+        collection.delete(where=filter_query)
+        log_debug(f"Deleted vectors matching {filter_query} from collection '{collection_name}'")
 
     def create_database(self, database_name: str, **kwargs):
         """

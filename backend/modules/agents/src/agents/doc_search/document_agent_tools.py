@@ -1,7 +1,7 @@
 from langchain_core.tools import tool
 from pydantic import BaseModel, Field
 
-from src.app.utils.embedding_util import create_default_embedding_model
+from src.app.utils.embedding_util import get_cached_default_embedding_model
 from core.utils.logger_util import log_debug, log_error, log_info
 from vector_db.base.vector_db_config import VectorDbConfig
 from vector_db.models.vector_model import VectorModel
@@ -36,7 +36,7 @@ def search_documents_tool(query: str, session_id: str, top_k: int = 5, ) -> str:
         vector_db = VectorDBFactory.create_vectordb_client(vector_db_config=vector_db_config)
 
         # Get embedding model to embed the query
-        embedding_model = create_default_embedding_model()
+        embedding_model = get_cached_default_embedding_model()
         query_embedding = embedding_model.embed_query(query)
         filter_query = {"session_id": {
             "$eq": session_id

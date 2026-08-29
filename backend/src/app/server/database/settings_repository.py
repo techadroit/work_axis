@@ -170,6 +170,7 @@ class SettingsRepository:
             },
             {
                 "name": OLLAMA_NAME,
+                "model_list": "https://ollama.com/library",
                 "fields": [
                     {
                         "name": "base_url",

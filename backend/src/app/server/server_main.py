@@ -11,6 +11,7 @@ from llm_module.model_downloader import download_embedding_model
 from src.app.server.database.db_session import initialize_database
 from src.app.server.routes.chat_api_routes import chat_api_router
 from src.app.server.routes.chat_session_api_routes import chat_session_api_router
+from src.app.server.routes.email_routes import email_routes
 from src.app.server.routes.file_api_routes import api_routes
 from src.app.server.routes.login_api_routes import login_api_routes
 from src.app.server.routes.logs_sse_routes import logs_sse_router
@@ -54,7 +55,7 @@ pi_app.add_middleware(
 
 pi_app.include_router(websocket_router)
 # API routers (all with /api prefix)
-api_routers = [api_routes, login_api_routes, chat_session_api_router, user_api_router, chat_api_router, settings_routes, model_provider_routes,logs_sse_router]
+api_routers = [api_routes, login_api_routes, chat_session_api_router, user_api_router, chat_api_router, settings_routes, model_provider_routes, logs_sse_router, email_routes]
 for router in api_routers:
     pi_app.include_router(router, prefix="/api")
 

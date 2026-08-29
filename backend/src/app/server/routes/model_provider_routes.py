@@ -1,4 +1,5 @@
 """API routes for model provider configuration management"""
+import httpx
 from fastapi import APIRouter, HTTPException, status
 from typing import List
 
@@ -17,6 +18,29 @@ model_provider_routes = APIRouter(
 
 # Initialize service
 model_provider_service = provide_model_provider_service()
+
+
+@model_provider_routes.get(
+    "/ollama/models",
+    summary="List models available on the local Ollama server",
+)
+def list_ollama_models(base_url: str = "http://localhost:11434"):
+    """Proxies Ollama's /api/tags so the frontend can offer a picker of
+    locally installed models. Proxied through the backend (rather than the
+    browser calling Ollama directly) so it also works when Ollama runs on a
+    remote host where its CORS policy would block the browser.
+    """
+    try:
+        response = httpx.get(f"{base_url.rstrip('/')}/api/tags", timeout=10)
+        response.raise_for_status()
+        models = [m["name"] for m in response.json().get("models", [])]
+        return {"models": models}
+    except httpx.HTTPError as e:
+        log_error(f"Failed to list Ollama models from {base_url}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Could not reach Ollama at {base_url} - is it running?",
+        )
 
 
 @model_provider_routes.post(

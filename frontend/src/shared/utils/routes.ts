@@ -21,6 +21,7 @@ export const ROUTES = {
   SETTINGS: '/settings',
   SETTINGS_GENERAL: '/settings/general',
   SETTINGS_MODELS: '/settings/models',
+  SETTINGS_EMAIL_INTEGRATIONS: '/settings/email-integrations',
 } as const;
 
 /**

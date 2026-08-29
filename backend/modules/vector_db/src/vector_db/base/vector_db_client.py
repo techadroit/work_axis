@@ -34,3 +34,7 @@ class VectorDbClient(ABC):
     @abstractmethod
     def query_vectors(self, collection_name: str, query: Any, **kwargs):
         pass
+
+    @abstractmethod
+    def delete_by_filter(self, collection_name: str, filter_query: dict):
+        pass

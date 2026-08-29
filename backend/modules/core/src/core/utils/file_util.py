@@ -91,3 +91,8 @@ def get_vector_db_path() -> Path:
 def get_embedding_models_path() -> Path:
     """Get the embedding models directory path."""
     return get_data_path() / "embedding_models"
+
+
+def get_keys_path() -> Path:
+    """Get the directory path for locally-generated secret keys (e.g. Fernet key)."""
+    return get_data_path() / "keys"

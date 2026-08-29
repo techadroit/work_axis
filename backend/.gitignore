@@ -1,5 +1,6 @@
 /data/models/Mistral-7B-v0.3.Q8_0.gguf
-environment/
+environment/*
+!environment/*.example
 __pycache__/
 *.py[cod]
 *$py.class
