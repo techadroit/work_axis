@@ -78,8 +78,11 @@ export const ChatInterface = () => {
     sessionId ? state.chat.paginationByChatSession[sessionId] : undefined
   );
 
-  // Get file upload state
-  const uploadingFiles = useChatSelector(state => state.fileUpload.uploadingFiles);
+  // Get file upload state, scoped to the currently viewed session so an
+  // upload in one chat doesn't appear in another
+  const uploadingFiles = useChatSelector(state =>
+    state.fileUpload.uploadingFiles.filter(f => f.chatSessionId === sessionId)
+  );
 
   // Load messages when session changes
   useEffect(() => {
@@ -262,6 +265,10 @@ export const ChatInterface = () => {
 
   const handleFileSelect = (filesWithMetadata: Array<FileData & { file?: File }>) => {
     filesWithMetadata.forEach(async (fileData) => {
+      // Ensure session exists before tracking the upload, so it can be scoped to it
+      const actualSessionId = await ensureSession();
+      if (!actualSessionId || !userId) return;
+
       // Generate unique file ID
       const fileId = `${fileData.name}_${Date.now()}`;
 
@@ -275,18 +282,14 @@ export const ChatInterface = () => {
       };
 
       // Add to uploading files with fileId
-      chatDispatch(startFileUpload({ ...serializableFileData, fileId }));
+      chatDispatch(startFileUpload({ ...serializableFileData, fileId, chatSessionId: actualSessionId }));
 
       // Store actual File object in ref if it exists
       if (fileData.file instanceof File) {
         const fileKey = `${fileData.name}_${fileData.lastModified}`;
         fileObjectsRef.current.set(fileKey, fileData.file);
 
-        // Ensure session exists, then auto-upload
-        const actualSessionId = await ensureSession();
-        if (actualSessionId && userId) {
-          handleFileUpload(actualSessionId, fileData.file, serializableFileData, fileId);
-        }
+        handleFileUpload(actualSessionId, fileData.file, serializableFileData, fileId);
       }
     });
   };

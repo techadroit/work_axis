@@ -6,7 +6,7 @@ import { logger } from '../../../core/logger';
 interface FileUploadState {
   uploads: Record<string, UploadProgress>; // fileId -> progress
   selectedFiles: FileData[];
-  uploadingFiles: Array<FileData & { fileId: string; uploadProgress: number }>; // Files being uploaded
+  uploadingFiles: Array<FileData & { fileId: string; chatSessionId: string; uploadProgress: number }>; // Files being uploaded
 }
 
 const initialState: FileUploadState = {
@@ -44,13 +44,13 @@ const fileUploadSlice = createSlice({
     clearUploadProgress: (state, action: PayloadAction<string>) => {
       delete state.uploads[action.payload];
     },
-    startFileUpload: (state, action: PayloadAction<FileData & { fileId: string }>) => {
+    startFileUpload: (state, action: PayloadAction<FileData & { fileId: string; chatSessionId: string }>) => {
       const fileData = action.payload;
       state.uploadingFiles.push({
         ...fileData,
         uploadProgress: 0,
       });
-      logger.info('File upload started', { filename: fileData.name, fileId: fileData.fileId });
+      logger.info('File upload started', { filename: fileData.name, fileId: fileData.fileId, chatSessionId: fileData.chatSessionId });
     },
     updateFileUploadProgress: (state, action: PayloadAction<{ fileId: string; progress: UploadProgress }>) => {
       const { fileId, progress } = action.payload;
