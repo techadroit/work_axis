@@ -1,1 +1,33 @@
-.idea
+# IDE
+.idea/
+.vscode/
+.DS_Store
+
+# Environment / secrets
+.env
+.env.*
+!.env.*.example
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*credentials*
+*secret*
+
+# Backend sensitive data
+backend/data/keys/
+backend/data/ssl_certs/
+backend/data/database/
+backend/environment/
+
+# Dependencies / build artifacts
+node_modules/
+dist/
+build/
+release/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+

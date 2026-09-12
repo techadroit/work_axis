@@ -56,9 +56,9 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 uv sync
 
 # run with Docker
-
 cd backend/docker
 docker-compose up --build
+
 # Server available at http://127.0.0.1:8001
 ```
 
