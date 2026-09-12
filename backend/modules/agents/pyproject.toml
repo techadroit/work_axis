@@ -1,8 +1,8 @@
 [project]
 name = "agents"
 version = "0.1.0"
-description = "LangGraph agent orchestration module for PersonalAI"
-authors = [{ name = "PersonalAI Team" }]
+description = "LangGraph agent orchestration module for WorkAxis"
+authors = [{ name = "WorkAxis Team" }]
 requires-python = ">=3.12,<3.13"
 dependencies = [
 	"langchain~=1.0.0",

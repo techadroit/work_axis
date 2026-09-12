@@ -344,7 +344,7 @@ class UserRepository:
         suffix = device_id or uuid.uuid4().hex[:12]
         user_create = UserCreate(
             username=f"guest_{uuid.uuid4().hex[:12]}",
-            email=f"anon_{suffix}_{uuid.uuid4().hex[:8]}@anon.personalai.internal",
+            email=f"anon_{suffix}_{uuid.uuid4().hex[:8]}@anon.workaxis.internal",
             password_hash="",
         )
         return UserRepository.create_user(user_create)
@@ -353,7 +353,7 @@ class UserRepository:
     def is_anonymous_user(user_id: str) -> bool:
         """
         Check whether a user_id refers to a guest account created via
-        create_anonymous_user (identified by its "@anon.personalai.internal" email domain).
+        create_anonymous_user (identified by its "@anon.workaxis.internal" email domain).
 
         Args:
             user_id: The user_id to check
@@ -364,7 +364,7 @@ class UserRepository:
         try:
             with get_db_session() as session:
                 user = session.get(UserORM, user_id)
-                return bool(user and user.email.endswith("@anon.personalai.internal"))
+                return bool(user and user.email.endswith("@anon.workaxis.internal"))
         except Exception as e:
             log_error(f"Error checking anonymous status for user {user_id}: {e}")
             return False

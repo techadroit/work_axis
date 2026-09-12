@@ -1,5 +1,5 @@
 """
-Schemas package for PersonalAI application.
+Schemas package for WorkAxis application.
 Contains request and response Pydantic models for API operations.
 """
 

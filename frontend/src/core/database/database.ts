@@ -96,7 +96,7 @@
 //
 //   try {
 //     const db = await createRxDatabase<DatabaseCollections>({
-//       name: 'personal_ai_db',
+//       name: 'work_axis_db',
 //       storage: getRxStorageDexie(),
 //       multiInstance: false,
 //       ignoreDuplicate: true,
@@ -143,7 +143,7 @@
 //     //     }
 //     //
 //     //     // Try to remove the database
-//     //     await removeRxDatabase('personal_ai_db', getRxStorageDexie());
+//     //     await removeRxDatabase('work_axis_db', getRxStorageDexie());
 //     //     console.log('[RxDB] Database removed, please refresh the page to reinitialize');
 //     //
 //     //     throw new Error('Database was locked. Please refresh the page to continue.');

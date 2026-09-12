@@ -1,8 +1,8 @@
 [project]
 name = "vector-db"
 version = "0.1.0"
-description = "Reusable vector database module for PersonalAI"
-authors = [{ name = "PersonalAI Team" }]
+description = "Reusable vector database module for WorkAxis"
+authors = [{ name = "WorkAxis Team" }]
 requires-python = ">=3.12,<3.13"
 dependencies = [
 	"chromadb",

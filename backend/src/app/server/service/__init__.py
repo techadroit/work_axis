@@ -1,5 +1,5 @@
 """
-Service layer package for PersonalAI application.
+Service layer package for WorkAxis application.
 Contains business logic and acts as an intermediate layer between routes and repositories.
 """
 

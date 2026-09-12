@@ -2,4 +2,4 @@ __all__ = []
 
 
 def main() -> None:
-    print("personalai-core module is installed and ready")
+    print("workaxis-core module is installed and ready")

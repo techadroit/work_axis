@@ -1,8 +1,8 @@
 [project]
 name = "core"
 version = "0.1.0"
-description = "Shared core utilities for PersonalAI workspace"
-authors = [{ name = "PersonalAI Team" }]
+description = "Shared core utilities for WorkAxis workspace"
+authors = [{ name = "WorkAxis Team" }]
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "loguru~=0.7.3",

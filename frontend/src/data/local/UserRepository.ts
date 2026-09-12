@@ -8,7 +8,7 @@ export interface UserDetailDocument {
  * Provides methods to interact with user details stored in browser's localStorage
  */
 export class UserRepository {
-  private static readonly STORAGE_KEY = 'personal_ai_users';
+  private static readonly STORAGE_KEY = 'work_axis_users';
 
   /**
    * Get all users from localStorage

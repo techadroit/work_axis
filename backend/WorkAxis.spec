@@ -1,6 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 """
-PyInstaller spec file for PersonalAI
+PyInstaller spec file for WorkAxis
 Builds a standalone executable bundling the FastAPI/uvicorn server,
 LLM integrations, RAG pipeline, ChromaDB, docling, and all supporting modules.
 """
@@ -361,7 +361,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='PersonalAI',
+    name='WorkAxis',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -376,7 +376,7 @@ exe = EXE(
 )
 
 # =============================================================================
-# COLLECT  – produces dist/PersonalAI/ folder
+# COLLECT  – produces dist/WorkAxis/ folder
 # =============================================================================
 coll = COLLECT(
     exe,
@@ -385,7 +385,7 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='PersonalAI',
+    name='WorkAxis',
 )
 
 # =============================================================================
@@ -393,9 +393,9 @@ coll = COLLECT(
 # =============================================================================
 app = BUNDLE(
     coll,
-    name='PersonalAI.app',
+    name='WorkAxis.app',
     icon=None,
-    bundle_identifier='com.personalai.server',
+    bundle_identifier='com.workaxis.server',
     info_plist={
         'NSPrincipalClass': 'NSApplication',
         'NSHighResolutionCapable': True,

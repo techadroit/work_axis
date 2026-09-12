@@ -1,11 +1,11 @@
 services:
 
-  # ── PersonalAI Backend ──────────────────────────────────────────────────────
-  personalai:
+  # ── WorkAxis Backend ──────────────────────────────────────────────────────
+  workaxis:
     build:
       context: ..
       dockerfile: docker/Dockerfile
-    container_name: personalai
+    container_name: workaxis
     restart: unless-stopped
 
     # Port mapping: host:container
@@ -28,12 +28,12 @@ services:
 
     # Named volumes for persistence
     volumes:
-      - personalai_db:/app/data/database
-      - personalai_files:/app/data/files
-      - personalai_vectordb:/app/data/vector_database
-      - personalai_embeddings:/app/data/embedding_models
-      - personalai_checkpoints:/app/data/checkpoints
-      - personalai_ssl:/app/data/ssl_certs
+      - workaxis_db:/app/data/database
+      - workaxis_files:/app/data/files
+      - workaxis_vectordb:/app/data/vector_database
+      - workaxis_embeddings:/app/data/embedding_models
+      - workaxis_checkpoints:/app/data/checkpoints
+      - workaxis_ssl:/app/data/ssl_certs
 
     # Ensure host.docker.internal resolves on Linux and works on Docker Desktop too.
     extra_hosts:
@@ -54,10 +54,10 @@ services:
         max-size: "50m"
         max-file: "5"
         labels: "service"
-        tag: "personalai|{{.ImageName}}|{{.Name}}|{{.ID}}"
+        tag: "workaxis|{{.ImageName}}|{{.Name}}|{{.ID}}"
 
     labels:
-      service: "personalai"
+      service: "workaxis"
 
   # ── Future services can be added below ─────────────────────────────────────
   # Example: a frontend, a separate worker, a database container, etc.
@@ -72,9 +72,9 @@ services:
 
 # ── Named volumes ─────────────────────────────────────────────────────────────
 volumes:
-  personalai_db:
-  personalai_files:
-  personalai_vectordb:
-  personalai_embeddings:
-  personalai_checkpoints:
-  personalai_ssl:
+  workaxis_db:
+  workaxis_files:
+  workaxis_vectordb:
+  workaxis_embeddings:
+  workaxis_checkpoints:
+  workaxis_ssl:

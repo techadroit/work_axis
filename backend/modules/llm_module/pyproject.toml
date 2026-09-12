@@ -1,8 +1,8 @@
 [project]
 name = "llm-module"
 version = "0.1.0"
-description = "Reusable LLM configuration, providers and handler module for PersonalAI"
-authors = [{ name = "PersonalAI Team" }]
+description = "Reusable LLM configuration, providers and handler module for WorkAxis"
+authors = [{ name = "WorkAxis Team" }]
 requires-python = ">=3.12,<3.13"
 dependencies = [
 	"langchain~=1.0.0",

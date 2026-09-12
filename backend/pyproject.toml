@@ -1,10 +1,10 @@
 [project]
-name = "personalai"
+name = "workaxis"
 version = "0.1.0"
-description = "PersonalAI backend service"
+description = "WorkAxis backend service"
 readme = "Readme.md"
 requires-python = ">=3.12,<3.13"
-authors = [{ name = "PersonalAI Team" }]
+authors = [{ name = "WorkAxis Team" }]
 dependencies = [
 	"langchain~=1.0.0",
 	"langchain-core~=1.0.0",

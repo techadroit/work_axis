@@ -1,8 +1,8 @@
 [project]
 name = "web-search"
 version = "0.1.0"
-description = "Reusable web search module for PersonalAI"
-authors = [{ name = "PersonalAI Team" }]
+description = "Reusable web search module for WorkAxis"
+authors = [{ name = "WorkAxis Team" }]
 requires-python = ">=3.12,<3.13"
 dependencies = [
 	"beautifulsoup4~=4.12.2",

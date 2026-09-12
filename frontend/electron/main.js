@@ -11,9 +11,9 @@ let serverProcess = null;
 
 function getServerPath() {
   if (app.isPackaged) {
-    return path.join(process.resourcesPath, 'PersonalAI', 'PersonalAI');
+    return path.join(process.resourcesPath, 'WorkAxis', 'WorkAxis');
   }
-    return path.join(__dirname, '..', 'resources', 'PersonalAI', 'PersonalAI');
+    return path.join(__dirname, '..', 'resources', 'WorkAxis', 'WorkAxis');
 }
 
 function startServer() {

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Build script for creating PersonalAI executable using PyInstaller
+Build script for creating WorkAxis executable using PyInstaller
 """
 import sys
 import shutil
@@ -55,7 +55,7 @@ def build_executable():
     print("🔨 Building pi_backend executable...")
     print("   This may take several minutes...\n")
 
-    spec_file = "PersonalAI.spec"
+    spec_file = "WorkAxis.spec"
 
     if not Path(spec_file).exists():
         print(f"   ❌ Error: {spec_file} not found")
@@ -138,7 +138,7 @@ def show_build_info():
 def main():
     """Main build process"""
     print("\n" + "=" * 70)
-    print("PersonalAI - Executable Build Script")
+    print("WorkAxis - Executable Build Script")
     print("=" * 70 + "\n")
 
     # Step 1: Clean

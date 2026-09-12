@@ -1,5 +1,5 @@
 {
-  "name": "personal_ai_client",
+  "name": "work_axis_client",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -53,8 +53,8 @@
     "wait-on": "^8.0.1"
   },
   "build": {
-    "appId": "com.personalai.client",
-    "productName": "Personal AI Client",
+    "appId": "com.workaxis.client",
+    "productName": "Work Axis Client",
     "files": [
       "dist/**/*",
       "electron/**/*"
@@ -66,8 +66,8 @@
       "category": "public.app-category.productivity",
       "extraResources": [
         {
-          "from": "resources/PersonalAI",
-          "to": "PersonalAI",
+          "from": "resources/WorkAxis",
+          "to": "WorkAxis",
           "filter": ["**/*"]
         }
       ]

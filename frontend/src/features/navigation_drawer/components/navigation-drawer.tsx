@@ -178,7 +178,7 @@ const NavigationDrawer = ({ isOpen, onToggle, onClose }: NavigationDrawerProps) 
             }}
           />
           <Typography variant="h3" sx={{ fontWeight: 700 }} >
-            Personal AI
+            Work Axis
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>

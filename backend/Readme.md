@@ -1,4 +1,4 @@
-# PersonalAI
+# WorkAxis
 
 A FastAPI-based AI application with support for multiple LLM providers, RAG (Retrieval-Augmented Generation), vector databases, and secure HTTPS communication.
 
@@ -52,7 +52,7 @@ uv run python backend/src/run_server.py
 
 ## SSL/HTTPS Configuration
 
-PersonalAI supports secure HTTPS communication with automatic SSL certificate generation.
+WorkAxis supports secure HTTPS communication with automatic SSL certificate generation.
 
 **Enable HTTPS:**
 ```bash
@@ -72,7 +72,7 @@ Create a standalone executable for distribution:
 python build_executable.py
 ```
 
-The executable will be available in `dist/PersonalAI/` (or `dist/PersonalAI.app` on macOS).
+The executable will be available in `dist/WorkAxis/` (or `dist/WorkAxis.app` on macOS).
 
 See [Build Guide](BUILD_GUIDE.md) for detailed build instructions.
 
@@ -114,7 +114,7 @@ Once running, visit:
 ## Project Structure
 
 ```
-PersonalAI/
+WorkAxis/
 ├── server/          # FastAPI application
 ├── llm/            # LLM provider integrations
 ├── rag/            # RAG pipeline
